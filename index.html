@@ -133,7 +133,7 @@
       border: 1px solid var(--border);
       transition: all 0.25s ease;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       min-height: 120px;
     }
     .card:hover {
@@ -210,6 +210,105 @@
       opacity: 1;
       transform: translateX(0);
     }
+
+    /* Info button */
+    .info-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: rgba(100,116,139,0.1);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      font-style: italic;
+      font-family: Georgia, serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10;
+      line-height: 1;
+    }
+    .info-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(14,165,233,0.1);
+    }
+    .card-featured .info-btn {
+      bottom: auto;
+      top: 12px;
+      right: 12px;
+    }
+
+    /* Info popover */
+    .info-popover {
+      display: none;
+      position: absolute;
+      bottom: 40px;
+      right: 8px;
+      width: 280px;
+      background: #1a2540;
+      border: 1px solid var(--border-hover);
+      border-radius: 10px;
+      padding: 14px 16px;
+      z-index: 100;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      animation: popIn 0.15s ease-out;
+    }
+    .info-popover.show { display: block; }
+    .info-popover.pop-top {
+      bottom: auto;
+      top: 40px;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(4px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .info-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: flex-start;
+    }
+    .info-row:last-child { margin-bottom: 0; }
+    .info-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      min-width: 42px;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+    .info-value {
+      font-size: 11px;
+      color: var(--text);
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .info-value a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .info-value a:hover { text-decoration: underline; }
+    .info-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 4px;
+      position: relative;
+      top: -1px;
+    }
+    .dot-green { background: var(--green); }
+    .dot-amber { background: var(--amber); }
+    .dot-blue { background: var(--accent); }
 
     /* Private section */
     .private-section {
@@ -294,59 +393,113 @@
   <div class="container">
 
     <!-- Featured -->
-    <a class="card card-featured" href="https://reels007.github.io/smart-hydration-model/">
-      <span class="card-icon">💧</span>
-      <div>
-        <span class="card-tag tag-bravo">Bravo</span>
-        <div class="card-title">Smart Hydration Model</div>
-        <div class="card-desc">Interactive 7-year financial model with scenario sharing for investors</div>
+    <div style="position:relative">
+      <a class="card card-featured" href="https://reels007.github.io/smart-hydration-model/">
+        <span class="card-icon">💧</span>
+        <div>
+          <span class="card-tag tag-bravo">Bravo</span>
+          <div class="card-title">Smart Hydration Model</div>
+          <div class="card-desc">Interactive 7-year financial model with scenario sharing for investors</div>
+        </div>
+        <span class="card-arrow">&rarr;</span>
+      </a>
+      <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-sh')">i</button>
+      <div class="info-popover pop-top" id="info-sh">
+        <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/smart-hydration-model/" target="_blank">reels007.github.io/smart-hydration-model</a></span></div>
+        <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/smart-hydration-model" target="_blank">GitHub</a> &mdash; Reels007/smart-hydration-model</span></div>
+        <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser) + URL hash for shared scenarios</span></div>
+        <div class="info-row"><span class="info-label">Host</span><span class="info-value">GitHub Pages (public)</span></div>
       </div>
-      <span class="card-arrow">&rarr;</span>
-    </a>
+    </div>
 
     <!-- Business -->
     <div class="section-label">Business</div>
     <div class="grid">
-      <a class="card" href="echo-businessx/">
-        <span class="card-arrow">&rarr;</span>
-        <span class="card-icon">📊</span>
-        <span class="card-tag tag-echo">Echo</span>
-        <div class="card-title">BusinessX</div>
-        <div class="card-desc">Portfolio overview and performance</div>
-      </a>
-      <a class="card" href="echo-businessx/solarx.html">
-        <span class="card-arrow">&rarr;</span>
-        <span class="card-icon">☀️</span>
-        <span class="card-tag tag-echo">Echo</span>
-        <div class="card-title">SolarX Calculator</div>
-        <div class="card-desc">Solar lease financial modelling</div>
-      </a>
-      <a class="card" href="charlie-ignite/">
-        <span class="card-arrow">&rarr;</span>
-        <span class="card-icon">🔥</span>
-        <span class="card-tag tag-charlie">Charlie</span>
-        <div class="card-title">Ignite Bermuda</div>
-        <div class="card-desc">Project folder navigator</div>
-      </a>
-      <a class="card" href="command-centre/">
-        <span class="card-arrow">&rarr;</span>
-        <span class="card-icon">🎯</span>
-        <span class="card-tag tag-ops">Ops</span>
-        <div class="card-title">Command Centre</div>
-        <div class="card-desc">Kanban board and task tracking</div>
-      </a>
+      <div style="position:relative">
+        <a class="card" href="echo-businessx/">
+          <span class="card-arrow">&rarr;</span>
+          <span class="card-icon">📊</span>
+          <span class="card-tag tag-echo">Echo</span>
+          <div class="card-title">BusinessX</div>
+          <div class="card-desc">Portfolio overview and performance</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-bx')">i</button>
+        <div class="info-popover" id="info-bx">
+          <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/sean-dashboards/echo-businessx/" target="_blank">reels007.github.io/sean-dashboards/echo-businessx</a></span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/sean-dashboards" target="_blank">GitHub</a> &mdash; sean-dashboards/echo-businessx/</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
+          <div class="info-row"><span class="info-label">Source</span><span class="info-value">Desktop/Echo - Business X (Bx)/Dashboards/</span></div>
+        </div>
+      </div>
+      <div style="position:relative">
+        <a class="card" href="echo-businessx/solarx.html">
+          <span class="card-arrow">&rarr;</span>
+          <span class="card-icon">☀️</span>
+          <span class="card-tag tag-echo">Echo</span>
+          <div class="card-title">SolarX Calculator</div>
+          <div class="card-desc">Solar lease financial modelling</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-sx')">i</button>
+        <div class="info-popover" id="info-sx">
+          <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/sean-dashboards/echo-businessx/solarx.html" target="_blank">sean-dashboards/echo-businessx/solarx.html</a></span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/sean-dashboards" target="_blank">GitHub</a> &mdash; sean-dashboards/echo-businessx/</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
+          <div class="info-row"><span class="info-label">Source</span><span class="info-value">Desktop/Echo - Business X (Bx)/SolarX App Web/</span></div>
+        </div>
+      </div>
+      <div style="position:relative">
+        <a class="card" href="charlie-ignite/">
+          <span class="card-arrow">&rarr;</span>
+          <span class="card-icon">🔥</span>
+          <span class="card-tag tag-charlie">Charlie</span>
+          <div class="card-title">Ignite Bermuda</div>
+          <div class="card-desc">Project folder navigator</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-ig')">i</button>
+        <div class="info-popover" id="info-ig">
+          <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/sean-dashboards/charlie-ignite/" target="_blank">sean-dashboards/charlie-ignite</a></span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/sean-dashboards" target="_blank">GitHub</a> &mdash; sean-dashboards/charlie-ignite/</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-amber"></span>Static — no persistent data</span></div>
+          <div class="info-row"><span class="info-label">Source</span><span class="info-value">Desktop/Charlie - Ignite Bermuda (IGN)/</span></div>
+        </div>
+      </div>
+      <div style="position:relative">
+        <a class="card" href="command-centre/">
+          <span class="card-arrow">&rarr;</span>
+          <span class="card-icon">🎯</span>
+          <span class="card-tag tag-ops">Ops</span>
+          <div class="card-title">Command Centre</div>
+          <div class="card-desc">Kanban board and task tracking</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-cc')">i</button>
+        <div class="info-popover" id="info-cc">
+          <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/sean-dashboards/command-centre/" target="_blank">sean-dashboards/command-centre</a></span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/sean-dashboards" target="_blank">GitHub</a> &mdash; sean-dashboards/command-centre/</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
+          <div class="info-row"><span class="info-label">Source</span><span class="info-value">Desktop/command-centre.html</span></div>
+        </div>
+      </div>
     </div>
 
     <!-- Tools -->
     <div class="section-label">Tools</div>
     <div class="grid">
-      <a class="card" href="golf-ai/">
-        <span class="card-arrow">&rarr;</span>
-        <span class="card-icon">🤖</span>
-        <span class="card-tag tag-golf">Golf</span>
-        <div class="card-title">Claude Connections</div>
-        <div class="card-desc">AI tools and automation map</div>
-      </a>
+      <div style="position:relative">
+        <a class="card" href="golf-ai/">
+          <span class="card-arrow">&rarr;</span>
+          <span class="card-icon">🤖</span>
+          <span class="card-tag tag-golf">Golf</span>
+          <div class="card-title">Claude Connections</div>
+          <div class="card-desc">AI tools and automation map</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-ai')">i</button>
+        <div class="info-popover" id="info-ai">
+          <div class="info-row"><span class="info-label">URL</span><span class="info-value"><a href="https://reels007.github.io/sean-dashboards/golf-ai/" target="_blank">sean-dashboards/golf-ai</a></span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-green"></span><a href="https://github.com/Reels007/sean-dashboards" target="_blank">GitHub</a> &mdash; sean-dashboards/golf-ai/</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-amber"></span>Static — no persistent data</span></div>
+          <div class="info-row"><span class="info-label">Source</span><span class="info-value">Desktop/Golf - AI & Automation (AI)/</span></div>
+        </div>
+      </div>
     </div>
 
     <!-- Private / Local -->
@@ -358,30 +511,48 @@
         <span class="chevron">&#9654;</span>
       </button>
       <div class="private-grid" id="privateGrid">
-        <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Alpha%20-%20Health%20%26%20Wellness%20(HW)/Health%20%26%20Wellness%20Dashboard%20%E2%80%94%20Sean%20%26%20Emma%20Reel.html">
-          <span class="card-icon">❤️</span>
-          <span class="card-tag tag-alpha">Alpha</span>
-          <div class="card-title">Health & Wellness</div>
-          <div class="card-desc">Health tracking for Sean & Emma</div>
-        </a>
-        <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Foxtrot%20-%20Finances%20(PF)/Dashboard.html">
-          <span class="card-icon">💰</span>
-          <span class="card-tag tag-foxtrot">Foxtrot</span>
-          <div class="card-title">Finances</div>
-          <div class="card-desc">Personal financial dashboard</div>
-        </a>
-        <a class="card card-private" href="file:///Users/seanreel2022/Desktop/claude-dashboard.html">
-          <span class="card-icon">📋</span>
-          <span class="card-tag tag-ops">Ops</span>
-          <div class="card-title">Claude Dashboard</div>
-          <div class="card-desc">Personal task management</div>
-        </a>
-        <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Sean-File-Organisation.html">
-          <span class="card-icon">🗂️</span>
-          <span class="card-tag tag-delta">Delta</span>
-          <div class="card-title">File Organisation</div>
-          <div class="card-desc">File system structure map</div>
-        </a>
+        <div style="position:relative">
+          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Alpha%20-%20Health%20%26%20Wellness%20(HW)/Health%20%26%20Wellness%20Dashboard%20%E2%80%94%20Sean%20%26%20Emma%20Reel.html">
+            <span class="card-icon">❤️</span>
+            <span class="card-tag tag-alpha">Alpha</span>
+            <div class="card-title">Health & Wellness</div>
+            <div class="card-desc">Health tracking for Sean & Emma</div>
+          </a>
+          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-hw')">i</button>
+          <div class="info-popover" id="info-hw">
+            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Alpha - Health & Wellness (HW)/Health & Wellness Dashboard.html</span></div>
+            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Foxtrot%20-%20Finances%20(PF)/Dashboard.html">
+            <span class="card-icon">💰</span>
+            <span class="card-tag tag-foxtrot">Foxtrot</span>
+            <div class="card-title">Finances</div>
+            <div class="card-desc">Personal financial dashboard</div>
+          </a>
+          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fin')">i</button>
+          <div class="info-popover" id="info-fin">
+            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Foxtrot - Finances (PF)/Dashboard.html</span></div>
+            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage + Python/Excel export</span></div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Sean-File-Organisation.html">
+            <span class="card-icon">🗂️</span>
+            <span class="card-tag tag-delta">Delta</span>
+            <div class="card-title">File Organisation</div>
+            <div class="card-desc">File system structure map</div>
+          </a>
+          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fo')">i</button>
+          <div class="info-popover" id="info-fo">
+            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Sean-File-Organisation.html</span></div>
+            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-amber"></span>Static — no persistent data</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -405,10 +576,27 @@
     function togglePrivate() {
       const grid = document.getElementById('privateGrid');
       const btn = document.getElementById('privateToggle');
-      const isOpen = grid.classList.contains('show');
       grid.classList.toggle('show');
       btn.classList.toggle('open');
     }
+
+    // Info popover toggle
+    let openPopover = null;
+    function toggleInfo(id) {
+      const el = document.getElementById(id);
+      if (openPopover && openPopover !== el) {
+        openPopover.classList.remove('show');
+      }
+      el.classList.toggle('show');
+      openPopover = el.classList.contains('show') ? el : null;
+    }
+    // Close popover on outside click
+    document.addEventListener('click', function(e) {
+      if (openPopover && !e.target.closest('.info-btn') && !e.target.closest('.info-popover')) {
+        openPopover.classList.remove('show');
+        openPopover = null;
+      }
+    });
   </script>
 </body>
 </html>
