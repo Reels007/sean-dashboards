@@ -310,40 +310,7 @@
     .dot-amber { background: var(--amber); }
     .dot-blue { background: var(--accent); }
 
-    /* Private section */
-    .private-section {
-      margin-top: 8px;
-      border-top: 1px dashed var(--border);
-      padding-top: 8px;
-    }
-    .private-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      padding: 10px 4px;
-      font-size: 12px;
-      color: var(--text-muted);
-      transition: color 0.2s;
-      background: none;
-      border: none;
-      width: 100%;
-      text-align: left;
-    }
-    .private-toggle:hover { color: var(--text-dim); }
-    .private-toggle .lock { font-size: 14px; }
-    .private-toggle .chevron {
-      margin-left: auto;
-      font-size: 10px;
-      transition: transform 0.2s;
-    }
-    .private-toggle.open .chevron { transform: rotate(90deg); }
-    .private-grid {
-      display: none;
-      padding-top: 8px;
-    }
-    .private-grid.show { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 520px) { .private-grid.show { grid-template-columns: 1fr; } }
+    /* Private cards */
     .card-private {
       background: rgba(100,116,139,0.06);
       border: 1px dashed var(--border);
@@ -364,6 +331,33 @@
       margin-left: 6px;
       font-weight: 600;
       letter-spacing: 0.5px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1a2540;
+      border: 1px solid var(--border-hover);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 12px;
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transition: transform 0.3s ease;
+      text-align: center;
+      max-width: 340px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast .toast-path {
+      display: block;
+      font-size: 10px;
+      color: var(--accent);
+      margin-top: 4px;
+      word-break: break-all;
     }
 
     /* Footer */
@@ -483,55 +477,48 @@
 
 
     <!-- Private / Local -->
-    <div class="private-section">
-      <button class="private-toggle" id="privateToggle" onclick="togglePrivate()">
-        <span class="lock">🔒</span>
-        <span>Private dashboards</span>
-        <span class="local-badge">Local only</span>
-        <span class="chevron">&#9654;</span>
-      </button>
-      <div class="private-grid" id="privateGrid">
-        <div style="position:relative">
-          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Alpha%20-%20Health%20%26%20Wellness%20(HW)/Health%20%26%20Wellness%20Dashboard%20%E2%80%94%20Sean%20%26%20Emma%20Reel.html">
-            <span class="card-icon">❤️</span>
-            <span class="card-tag tag-alpha">Alpha</span>
-            <div class="card-title">Health & Wellness</div>
-            <div class="card-desc">Health tracking for Sean & Emma</div>
-          </a>
-          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-hw')">i</button>
-          <div class="info-popover" id="info-hw">
-            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Alpha - Health & Wellness (HW)/Health & Wellness Dashboard.html</span></div>
-            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
-            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
-          </div>
+    <div class="section-label">Private <span class="local-badge" style="margin-left:4px">Local only</span></div>
+    <div class="grid">
+      <div style="position:relative">
+        <a class="card card-private" onclick="openLocal('/Users/seanreel2022/Desktop/Alpha%20-%20Health%20%26%20Wellness%20(HW)/Health%20%26%20Wellness%20Dashboard%20%E2%80%94%20Sean%20%26%20Emma%20Reel.html', event)" href="file:///Users/seanreel2022/Desktop/Alpha%20-%20Health%20%26%20Wellness%20(HW)/Health%20%26%20Wellness%20Dashboard%20%E2%80%94%20Sean%20%26%20Emma%20Reel.html">
+          <span class="card-icon">❤️</span>
+          <span class="card-tag tag-alpha">Alpha</span>
+          <div class="card-title">Health & Wellness</div>
+          <div class="card-desc">Health tracking for Sean & Emma</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-hw')">i</button>
+        <div class="info-popover" id="info-hw">
+          <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Alpha - Health & Wellness (HW)/Health & Wellness Dashboard.html</span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage (per browser)</span></div>
         </div>
-        <div style="position:relative">
-          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Foxtrot%20-%20Finances%20(PF)/Dashboard.html">
-            <span class="card-icon">💰</span>
-            <span class="card-tag tag-foxtrot">Foxtrot</span>
-            <div class="card-title">Finances</div>
-            <div class="card-desc">Personal financial dashboard</div>
-          </a>
-          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fin')">i</button>
-          <div class="info-popover" id="info-fin">
-            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Foxtrot - Finances (PF)/Dashboard.html</span></div>
-            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
-            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage + Python/Excel export</span></div>
-          </div>
+      </div>
+      <div style="position:relative">
+        <a class="card card-private" onclick="openLocal('/Users/seanreel2022/Desktop/Foxtrot%20-%20Finances%20(PF)/Dashboard.html', event)" href="file:///Users/seanreel2022/Desktop/Foxtrot%20-%20Finances%20(PF)/Dashboard.html">
+          <span class="card-icon">💰</span>
+          <span class="card-tag tag-foxtrot">Foxtrot</span>
+          <div class="card-title">Finances</div>
+          <div class="card-desc">Personal financial dashboard</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fin')">i</button>
+        <div class="info-popover" id="info-fin">
+          <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Foxtrot - Finances (PF)/Dashboard.html</span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-blue"></span>localStorage + Python/Excel export</span></div>
         </div>
-        <div style="position:relative">
-          <a class="card card-private" href="file:///Users/seanreel2022/Desktop/Sean-File-Organisation.html">
-            <span class="card-icon">🗂️</span>
-            <span class="card-tag tag-delta">Delta</span>
-            <div class="card-title">File Organisation</div>
-            <div class="card-desc">File system structure map</div>
-          </a>
-          <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fo')">i</button>
-          <div class="info-popover" id="info-fo">
-            <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Sean-File-Organisation.html</span></div>
-            <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
-            <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-amber"></span>Static — no persistent data</span></div>
-          </div>
+      </div>
+      <div style="position:relative">
+        <a class="card card-private" onclick="openLocal('/Users/seanreel2022/Desktop/Sean-File-Organisation.html', event)" href="file:///Users/seanreel2022/Desktop/Sean-File-Organisation.html">
+          <span class="card-icon">🗂️</span>
+          <span class="card-tag tag-delta">Delta</span>
+          <div class="card-title">File Organisation</div>
+          <div class="card-desc">File system structure map</div>
+        </a>
+        <button class="info-btn" onclick="event.stopPropagation(); event.preventDefault(); toggleInfo('info-fo')">i</button>
+        <div class="info-popover" id="info-fo">
+          <div class="info-row"><span class="info-label">File</span><span class="info-value">Desktop/Sean-File-Organisation.html</span></div>
+          <div class="info-row"><span class="info-label">Code</span><span class="info-value"><span class="info-dot dot-amber"></span>Local file only — not in GitHub</span></div>
+          <div class="info-row"><span class="info-label">Data</span><span class="info-value"><span class="info-dot dot-amber"></span>Static — no persistent data</span></div>
         </div>
       </div>
     </div>
@@ -539,7 +526,24 @@
     <div class="footer">Last updated March 2026</div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script>
+    // Open local file — works from file://, copies path from https://
+    function openLocal(path, e) {
+      var isLocal = window.location.protocol === 'file:';
+      if (isLocal) return; // let the href work naturally
+      e.preventDefault();
+      var fullPath = 'file://' + decodeURIComponent(path);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(fullPath);
+      }
+      var toast = document.getElementById('toast');
+      toast.innerHTML = 'Path copied — paste into your browser address bar<span class="toast-path">' + fullPath + '</span>';
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 4000);
+    }
+
     // Clock
     function updateClock() {
       const now = new Date();
@@ -551,14 +555,6 @@
     }
     updateClock();
     setInterval(updateClock, 30000);
-
-    // Private toggle
-    function togglePrivate() {
-      const grid = document.getElementById('privateGrid');
-      const btn = document.getElementById('privateToggle');
-      grid.classList.toggle('show');
-      btn.classList.toggle('open');
-    }
 
     // Info popover toggle
     let openPopover = null;
