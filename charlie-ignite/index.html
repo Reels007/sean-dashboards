@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Ignite Bermuda — Google Drive Map</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --border:#334155; --text:#e2e8f0; --dim:#94a3b8; --ign:#34d399; --ign-dim:rgba(52,211,153,0.15); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; padding:40px 24px; }
+  .wrap { max-width:880px; margin:0 auto; }
+  h1 { font-size:28px; margin-bottom:4px; color:var(--ign); }
+  .sub { color:var(--dim); margin-bottom:32px; font-size:14px; }
+  .sub a { color:var(--ign); text-decoration:none; }
+  .sub a:hover { text-decoration:underline; }
+
+  /* Tree */
+  .tree { margin-bottom:36px; }
+  .tree ul { list-style:none; padding-left:0; }
+  .tree ul ul { padding-left:28px; border-left:2px solid var(--border); margin-left:12px; }
+  .tree li { position:relative; padding:6px 0; }
+  .node { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:10px; font-size:14px; text-decoration:none; color:var(--text); transition:background 0.15s; }
+  .node:hover { background:var(--ign-dim); }
+  .node .icon { font-size:18px; }
+  .node .name { font-weight:600; }
+  .node .meta { font-size:11px; color:var(--dim); margin-left:4px; }
+  .folder .icon { color:#fbbf24; }
+  .file .icon { color:var(--ign); }
+  .gdoc .icon { color:#60a5fa; }
+
+  /* Category badges */
+  .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-left:6px; }
+  .b-strategy { background:rgba(96,165,250,0.15); color:#60a5fa; }
+  .b-finance  { background:rgba(251,191,36,0.15); color:#fbbf24; }
+  .b-board    { background:rgba(167,139,250,0.15); color:#a78bfa; }
+  .b-brand    { background:rgba(244,114,182,0.15); color:#f472b6; }
+  .b-ref      { background:rgba(148,163,184,0.15); color:#94a3b8; }
+  .b-active   { background:rgba(52,211,153,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.3); }
+
+  .open-btn { display:inline-block; margin-top:28px; padding:12px 28px; background:var(--ign); color:#0f172a; font-weight:700; font-size:15px; border-radius:12px; text-decoration:none; transition:opacity 0.15s; }
+  .open-btn:hover { opacity:0.85; }
+
+  .footer { margin-top:36px; padding:20px 24px; background:var(--card); border-radius:14px; font-size:13px; color:var(--dim); line-height:1.8; }
+  .footer strong { color:var(--text); }
+</style>
+</head><body>
+<div class="wrap">
+
+<h1>Ignite Bermuda — Drive Map</h1>
+<p class="sub">Complete folder structure &middot; <a href="https://drive.google.com/drive/folders/1MsQDaHQ-6wVG8-f_aq56ylPKwnBB_JIV" target="_blank">Open in Google Drive &rarr;</a></p>
+
+<a class="open-btn" href="https://drive.google.com/drive/folders/1MsQDaHQ-6wVG8-f_aq56ylPKwnBB_JIV" target="_blank">Open Ignite Bermuda Drive</a>
+
+<div class="tree" style="margin-top:32px;">
+<ul>
+  <li>
+    <a class="node folder" href="https://drive.google.com/drive/folders/1MsQDaHQ-6wVG8-f_aq56ylPKwnBB_JIV" target="_blank">
+      <span class="icon">📁</span>
+      <span class="name">Ignite Bermuda</span>
+      <span class="meta">root</span>
+    </a>
+    <ul>
+
+      <!-- 2024 ReIgnite -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1-PQ0yx1txmsVLVdT3qSdGFWHaWCZzKKJ" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">2024 ReIgnite</span>
+          <span class="badge b-active">Active</span>
+          <span class="meta">modified Mar 2026</span>
+        </a>
+      </li>
+
+      <!-- Ignite 2030 Strategy -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1y9x5T9HkqArPFG8Re3L8y7hd-u3LMtGT" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">Ignite 2030 Strategy</span>
+          <span class="badge b-strategy">Strategy</span>
+          <span class="badge b-active">Active</span>
+          <span class="meta">modified Mar 2026</span>
+        </a>
+      </li>
+
+      <!-- Ignite Board Meeting May 2023 -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1r3n5-eWlZgAG5ZLlgT6YzOIQg7Hajtvg" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">Ignite Board Meeting May 2023</span>
+          <span class="badge b-board">Board</span>
+        </a>
+      </li>
+
+      <!-- Ignite Board Meeting Nov 24 -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1V1EIpPgE9dwve4e7ZMrmQ8xswdmljdP_" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">Ignite Board Meeting Nov 24</span>
+          <span class="badge b-board">Board</span>
+        </a>
+      </li>
+
+      <!-- IGNITE EXPENSES -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1RZCs8-BJvw489WNFvWtboz5p6flTdcOb" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">IGNITE EXPENSES</span>
+          <span class="badge b-finance">Finance</span>
+        </a>
+        <ul>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1FYwCwwjWXmZmrT140kGdEKxR8JEafs-1" target="_blank"><span class="icon">📁</span><span class="name">April25 Expenses</span></a></li>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1_3Kulpkh9VxoSMptcp6iHh-ulsGWqL-e" target="_blank"><span class="icon">📁</span><span class="name">Nov Expenses</span></a></li>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1NMUR9vtFjzU7c747oPYJqRzmAJOTLcQE" target="_blank"><span class="icon">📁</span><span class="name">OCT Expenses</span></a></li>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1zkFKWxluJkJzJmQtkXLtv2Ibnm8Ab_BD" target="_blank"><span class="icon">📁</span><span class="name">Expenses Dec 25</span></a></li>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1GXDdnQLtwZ-oscAdDk8BpvNkoOOPVtFs" target="_blank"><span class="icon">📁</span><span class="name">LateDec25 Exps</span></a></li>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1USds-b_mXiznSFqITHtX-ILtUaI4eO29" target="_blank"><span class="icon">📁</span><span class="name">Old Expenses</span></a></li>
+        </ul>
+      </li>
+
+      <!-- Ignite Financials -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1L-s0p30FWgUTUHhXzKJEl1VI9W8jEj10" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">Ignite Financials</span>
+          <span class="badge b-finance">Finance</span>
+        </a>
+      </li>
+
+      <!-- Ignite Logo DESIGN -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1Ja_xFEVvpyGAGc5PqHy055Mll3SNVNhc" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">Ignite Logo DESIGN</span>
+          <span class="badge b-brand">Brand</span>
+        </a>
+      </li>
+
+      <!-- IGNITE Strategy Review 2023-2025 -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1uLPxNKAXLlFduiad2XQrZ6e1UDRhbOM2" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">IGNITE Strategy Review 2023-2025</span>
+          <span class="badge b-strategy">Strategy</span>
+        </a>
+        <ul>
+          <li><a class="node folder" href="https://drive.google.com/drive/folders/1ZEoB0APUUsc0ATdoBJ2yE82osgwT42MO" target="_blank"><span class="icon">📁</span><span class="name">Ignite Board Strategy July 22</span></a></li>
+        </ul>
+      </li>
+
+      <!-- PWC BDA National Strategy -->
+      <li>
+        <a class="node folder" href="https://drive.google.com/drive/folders/1QeBCCWeZovu_4dgnx_MDVvAMLXmaI5kq" target="_blank">
+          <span class="icon">📁</span>
+          <span class="name">PWC BDA National Strategy folder</span>
+          <span class="badge b-ref">Reference</span>
+        </a>
+      </li>
+
+      <!-- Loose file: Strategy Doc -->
+      <li>
+        <a class="node gdoc" href="https://docs.google.com/document/d/1m99ex6LSKTQutYOyb1_g7x6mR9-dDKv-R-z-mnZzPeg/edit" target="_blank">
+          <span class="icon">📄</span>
+          <span class="name">IGN - Strategy - Entrepreneurship Feedback - V1</span>
+          <span class="badge b-strategy">Strategy</span>
+          <span class="meta">Google Doc &middot; modified Mar 2026</span>
+        </a>
+      </li>
+
+    </ul>
+  </li>
+</ul>
+</div>
+
+<div class="footer">
+  <strong>Quick stats:</strong> 9 subfolders + loose documents &middot; 6 monthly expense folders &middot; 2 actively modified folders (Mar 2026)<br>
+  <strong>Most active areas:</strong> 2024 ReIgnite, Ignite 2030 Strategy, Entrepreneurship Feedback doc<br>
+  <strong>Categories:</strong> Strategy (3) &middot; Board (2) &middot; Finance (2) &middot; Brand (1) &middot; Reference (1)<br><br>
+  Every folder name above is a clickable link that opens directly in Google Drive.
+</div>
+
+</div>
+</body></html>

@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SolarX | Solar Lease Calculator</title>
+  <meta name="description" content="SolarX Solar Lease Calculator - Bermuda's First Solar Leasing Platform">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>☀</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; width: 100%; }
+    body { overflow-x: hidden; }
+  </style>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+
+
+const fmt = (n, dec = 0) => {
+  if (n == null || isNaN(n)) return "--";
+  return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+};
+const pct = (n, dec = 1) => (n * 100).toFixed(dec) + "%";
+
+// ── Signature Pad Component ──
+function SignaturePad({ label, onSave, saved }) {
+  const canvasRef = useRef(null);
+  const [drawing, setDrawing] = useState(false);
+  const [hasStrokes, setHasStrokes] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = "#1a2e44";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  };
+
+  const start = (e) => {
+    e.preventDefault();
+    setDrawing(true);
+    const ctx = canvasRef.current.getContext("2d");
+    const { x, y } = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const move = (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    const { x, y } = getPos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    setHasStrokes(true);
+  };
+
+  const end = (e) => {
+    e.preventDefault();
+    setDrawing(false);
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    setHasStrokes(false);
+  };
+
+  const save = () => {
+    if (!hasStrokes) return;
+    const dataUrl = canvasRef.current.toDataURL("image/png");
+    onSave(dataUrl);
+  };
+
+  if (saved) {
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
+        <div style={{ background: "#f0faf4", border: "2px solid #34d399", borderRadius: 10, padding: 10, textAlign: "center" }}>
+          <img src={saved} alt="Signature" style={{ maxWidth: "100%", height: 60 }} />
+          <div style={{ fontSize: 12, color: "#059669", marginTop: 4, fontWeight: 600 }}>✓ Signed</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
+      <canvas
+        ref={canvasRef}
+        style={{ width: "100%", height: 100, border: "2px dashed #c5d0d8", borderRadius: 10, background: "#fafcfe", touchAction: "none" }}
+        onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
+        onTouchStart={start} onTouchMove={move} onTouchEnd={end}
+      />
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button onClick={clear} style={{ flex: 1, padding: "10px 0", border: "1px solid #d1d9e0", borderRadius: 8, background: "#fff", fontSize: 13, color: "#64748b", fontWeight: 600 }}>Clear</button>
+        <button onClick={save} disabled={!hasStrokes} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: hasStrokes ? "#f59e0b" : "#e2e8f0", fontSize: 13, color: hasStrokes ? "#fff" : "#94a3b8", fontWeight: 700 }}>Confirm Signature</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Lease Calculation Engine ──
+function calcLease({ systemCost, monthlyBill, monthlySavingsY1, inflationRate, depositPct, costChangePct, interestRate, degradation, omEscalation, baseOM, elecRate, co2Factor, treesPerTonne, carEmissions, homesPerKwh }) {
+  const deposit = systemCost * depositPct;
+  const financed = systemCost - deposit;
+  const annualSavingsY1 = monthlySavingsY1 * 12;
+  const annualBill = monthlyBill * 12;
+  const maxPaymentY1 = monthlyBill * costChangePct + monthlySavingsY1;
+  const monthlyLease = maxPaymentY1;
+  const annualLease = monthlyLease * 12;
+
+  if (monthlyLease <= 0) return { tooLow: true };
+
+  const monthlyRate = interestRate / 12;
+  let balance = financed;
+  let months = 0;
+  while (balance > 0 && months < 600) {
+    const prevBalance = balance;
+    balance = balance * (1 + monthlyRate) - monthlyLease;
+    months++;
+    // Prorate final month: actual last payment is only what was needed
+    if (balance <= 0) {
+      var finalPayment = prevBalance * (1 + monthlyRate);
+      break;
+    }
+  }
+
+  // Total cost uses prorated final payment
+  const fullMonthPayments = (months - 1) * monthlyLease;
+  const totalLease = deposit + fullMonthPayments + (finalPayment || monthlyLease);
+  const totalInterest = totalLease - systemCost;
+  const leaseYears = months / 12;
+
+  // Year 1 during lease
+  const y1MonthlyCost = monthlyLease + (monthlyBill - monthlySavingsY1);
+  const y1Difference = y1MonthlyCost - monthlyBill;
+
+  // Post-lease (year after) — applies panel degradation for accuracy
+  const yearsToEnd = Math.ceil(leaseYears);
+  const inflMult = Math.pow(1 + inflationRate, yearsToEnd);
+  const degMult = Math.pow(1 - degradation, yearsToEnd);
+  const postBelco = (monthlyBill - monthlySavingsY1 * degMult) * inflMult;
+  const postSaving = monthlySavingsY1 * degMult * inflMult;
+
+  // 25 year projection
+  const projection = [];
+  let cumBenefit = -deposit;
+  let cumCO2 = 0;
+  const annualKwh = (annualSavingsY1 / elecRate);
+
+  for (let y = 1; y <= 25; y++) {
+    const belcoBill = annualBill * Math.pow(1 + inflationRate, y);
+    const degraded = annualSavingsY1 * Math.pow(1 - degradation, y - 1) * Math.pow(1 + inflationRate, y);
+    const lease = y <= leaseYears ? annualLease : (y <= Math.ceil(leaseYears) && months % 12 !== 0 ? annualLease * ((months % 12) / 12) : 0);
+    const totalCost = belcoBill - degraded + lease;
+    const saving = belcoBill - totalCost;
+    cumBenefit += saving;
+    const kwh = annualKwh * Math.pow(1 - degradation, y - 1);
+    const co2 = kwh * co2Factor / 1000;
+    cumCO2 += co2;
+    const status = y <= Math.ceil(leaseYears) ? "Lease active" : "You own it!";
+    projection.push({ year: y, belcoBill, solarSavings: degraded, lease, totalCost, saving, cumBenefit, status, kwh, co2, cumCO2 });
+  }
+
+  // Environmental metrics: annual average equivalents (dimensionally correct)
+  const avgAnnualCO2 = cumCO2 / 25;
+
+  return {
+    deposit, financed, monthlyLease, months, leaseYears, totalLease, totalInterest,
+    y1MonthlyCost, y1Difference, postBelco, postSaving,
+    netBenefit25: cumBenefit,
+    projection,
+    totalCO2: cumCO2,
+    trees: Math.round(avgAnnualCO2 * treesPerTonne),
+    cars: avgAnnualCO2 / carEmissions,
+  };
+}
+
+// ── Settings defaults ──
+const DEFAULTS = {
+  interestRate: 0.10,
+  degradation: 0.0054,
+  omEscalation: 0.025,
+  baseOM: 1543.56,
+  elecRate: 0.42,
+  co2Factor: 0.70,
+  treesPerTonne: 45,
+  carEmissions: 4.6,
+  homesPerKwh: 1,
+};
+
+const HEADER_IMG = "data:image/jpeg;base64,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";
+
+// ── Main App ──
+function SolarXApp() {
+  const [tab, setTab] = useState("calc");
+  const [clientName, setClientName] = useState("");
+  const [siteAddress, setSiteAddress] = useState("");
+  const [systemCost, setSystemCost] = useState(385889);
+  const [monthlyBill, setMonthlyBill] = useState(29744);
+  const [monthlySavingsY1, setMonthlySavingsY1] = useState(4430);
+  const [inflationRate, setInflationRate] = useState(0.025);
+  const [depositPct, setDepositPct] = useState(0.15);
+  const [costChangePct, setCostChangePct] = useState(0.10);
+  const [systemDescription, setSystemDescription] = useState("");
+  const [sigLessor, setSigLessor] = useState(null);
+  const [sigLessee, setSigLessee] = useState(null);
+  const [sigLessorName, setSigLessorName] = useState("");
+  const [sigLesseeName, setSigLesseeName] = useState("");
+  const [sigLesseeTitle, setSigLesseeTitle] = useState("");
+  const [agreedDate, setAgreedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showProjection, setShowProjection] = useState(false);
+  const [editingField, setEditingField] = useState(null);
+
+  const result = calcLease({
+    systemCost, monthlyBill, monthlySavingsY1, inflationRate, depositPct, costChangePct, ...DEFAULTS,
+  });
+
+  const allFieldsComplete = !!(
+    clientName && siteAddress && sigLessor && sigLessee &&
+    sigLessorName && sigLesseeName && sigLesseeTitle && agreedDate && result && !result.tooLow
+  );
+
+  const [printView, setPrintView] = useState(false);
+
+  const mailtoUrl = (() => {
+    if (!result || result.tooLow) return "";
+    const s = encodeURIComponent("SolarX HoT Signed - " + clientName + " - " + siteAddress);
+    const b = encodeURIComponent("Please find the signed Heads of Terms for:\n\nClient: " + clientName + "\nSite: " + siteAddress + "\nDate: " + new Date(agreedDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "\n\nThe signed PDF is attached.\n\n---\nSent from SolarX Lease Calculator");
+    return "mailto:sean.reel@ignitebermuda.com?subject=" + s + "&body=" + b;
+  })();
+
+  const handleSubmit = () => {
+    setPrintView(true);
+    setTimeout(() => { try { window.print(); } catch(e) {} }, 600);
+  };
+
+  const tabs = [
+    { id: "calc", label: "Calculator", icon: "⚡" },
+    { id: "impact", label: "Impact", icon: "🌱" },
+    { id: "terms", label: "Agreement", icon: "📝" },
+  ];
+
+  const containerStyle = {
+    fontFamily: "'DM Sans', 'Avenir', -apple-system, sans-serif",
+    maxWidth: 480,
+    margin: "0 auto",
+    background: "#f7f9fb",
+    minHeight: "100vh",
+    color: "#1a2e44",
+    fontSize: 14,
+    lineHeight: 1.5,
+    position: "relative",
+    paddingBottom: 80,
+  };
+
+  const cardStyle = {
+    background: "#fff",
+    borderRadius: 14,
+    padding: "18px 16px",
+    marginBottom: 14,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+  };
+
+  const labelStyle = {
+    fontSize: 12,
+    color: "#6b7c8a",
+    marginBottom: 4,
+    fontWeight: 500,
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1.5px solid #d1d9e0",
+    borderRadius: 10,
+    fontSize: 15,
+    color: "#1a2e44",
+    background: "#fafcfe",
+    boxSizing: "border-box",
+    outline: "none",
+  };
+
+  const heroNum = {
+    fontSize: 28,
+    fontWeight: 800,
+    color: "#f59e0b",
+    lineHeight: 1.1,
+  };
+
+  const sectionTitle = {
+    fontSize: 13,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "#94a3b8",
+    marginBottom: 12,
+    marginTop: 4,
+  };
+
+  // ── Print View: Full signed HoT document rendered inline ──
+  if (printView && result && !result.tooLow) {
+    const leaseLen = Math.floor(result.leaseYears) + " yrs " + Math.round((result.leaseYears % 1) * 12) + " mths";
+    const dateStr = new Date(agreedDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const validUntil = new Date(new Date(agreedDate).getTime() + 14 * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+    const ps = { fontSize: 10, color: "#475569", lineHeight: 1.6, margin: "0 0 6px" };
+    const row = (label, value) => (
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #eef1f4" }}>
+        <span style={{ color: "#6b7c8a", fontSize: 11 }}>{label}</span>
+        <span style={{ fontWeight: 600, fontSize: 11, textAlign: "right", maxWidth: "55%" }}>{value}</span>
+      </div>
+    );
+    const secTitle = (t) => <div style={{ fontSize: 12, fontWeight: 700, color: "#1a2e44", borderBottom: "2px solid #f59e0b", paddingBottom: 3, marginBottom: 8, display: "inline-block" }}>{t}</div>;
+
+    return (
+      <div style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", color: "#1a2e44", fontSize: 11, lineHeight: 1.5, maxWidth: 720, margin: "0 auto", padding: 16, background: "#fff", minHeight: "100vh" }}>
+        <style dangerouslySetInnerHTML={{ __html: `@media print { .no-print { display: none !important; } @page { margin: 15mm; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }` }} />
+
+        {/* Action bar - hidden when printing */}
+        <div className="no-print" style={{ position: "sticky", top: 0, background: "#fff", zIndex: 50, padding: "10px 0 14px", borderBottom: "1px solid #e2e8f0", marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => { setPrintView(false); }} style={{ padding: "10px 16px", border: "1px solid #d1d9e0", borderRadius: 8, background: "#fff", fontSize: 12, color: "#64748b", fontWeight: 600, cursor: "pointer" }}>
+            ← Back
+          </button>
+          <button onClick={() => { try { window.print(); } catch(e) {} }} style={{ flex: 1, padding: "10px 16px", border: "none", borderRadius: 8, background: "#1a2e44", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            📄 Save as PDF / Print
+          </button>
+          <a href={mailtoUrl} style={{ flex: 1, padding: "10px 16px", border: "none", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center", textDecoration: "none", display: "block" }}>
+            📧 Email to SolarX
+          </a>
+        </div>
+
+        {/* Document */}
+        <div style={{ background: "#1a2e44", color: "#fff", padding: "16px 20px", borderRadius: 6, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 0.5 }}>HEADS OF TERMS</div>
+            <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>SolarX Solar Lease Agreement</div>
+          </div>
+          <div style={{ background: "#e74c3c", color: "#fff", fontSize: 8, fontWeight: 700, padding: "4px 10px", borderRadius: 4, textAlign: "center", letterSpacing: 0.5 }}>SUBJECT TO CONTRACT<br/>NOT LEGALLY BINDING</div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("1. PARTIES")}
+          {row("Lessor", "SolarX Ltd")}
+          {row("Lessee (Client)", clientName)}
+          {row("Installation Address", siteAddress)}
+          {row("Date", dateStr)}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("2. SOLAR SYSTEM")}
+          {row("Total System Cost", fmt(systemCost))}
+          {row("System Description", systemDescription || "To be confirmed")}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("3. LEASE TERMS")}
+          {row("Upfront Deposit", fmt(result.deposit) + " (" + pct(depositPct, 0) + ")")}
+          {row("Monthly Lease Payment (Fixed)", fmt(result.monthlyLease))}
+          {row("Lease Term", leaseLen)}
+          {row("Total Lease Payments", fmt(result.totalLease))}
+          {row("Total Interest", fmt(result.totalInterest))}
+          {row("Annual Interest Rate", pct(DEFAULTS.interestRate, 0) + " (fixed)")}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("4. OWNERSHIP & TRANSFER")}
+          <p style={ps}>During the Lease Term, the System remains the property of SolarX Ltd.</p>
+          <p style={ps}>Upon completion of all lease payments, full ownership of the System transfers to the Lessee at no additional cost.</p>
+          <p style={ps}>The Lessee is responsible for maintaining adequate insurance for the System from the date of commissioning.</p>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("5. ENERGY ESTIMATES (INDICATIVE ONLY)")}
+          <p style={{ ...ps, fontStyle: "italic", fontSize: 9, marginBottom: 8 }}>Estimates only, not a guarantee. Actual results depend on weather, consumption patterns, grid tariff changes, and system performance.</p>
+          {row("Current Monthly Energy Bill (est.)", fmt(monthlyBill))}
+          {row("Estimated Monthly Solar Savings (Year 1)", fmt(monthlySavingsY1))}
+          {row("Estimated Monthly Cost During Lease (Year 1)", fmt(result.y1MonthlyCost))}
+          {row("Estimated Annual Savings After Lease", fmt(result.postSaving * 12))}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("6. CONDITIONS PRECEDENT")}
+          {["Approval by SolarX Ltd's funding partners.", "Completion of a satisfactory site survey and structural assessment.", "Lessee obtaining all necessary planning permissions and consents.", "Lessee maintaining a valid electricity supply agreement with BELCO.", "Satisfactory credit and reference checks on the Lessee."].map((c, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 3, fontSize: 10, color: "#475569" }}>
+              <span style={{ color: "#f59e0b", fontWeight: 700 }}>•</span><span>{c}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("7. VALIDITY & NEXT STEPS")}
+          {row("Offer Valid Until", validUntil)}
+          <p style={{ ...ps, marginTop: 6 }}>This Heads of Terms is not legally binding and is intended to record the parties' mutual understanding of the principal commercial terms. A formal Lease Agreement will be prepared by SolarX Ltd's legal advisors upon agreement of these terms.</p>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {secTitle("8. AGREED AND ACCEPTED")}
+          <p style={ps}>By signing below, the parties confirm their intention to proceed on the basis of these Heads of Terms.</p>
+          <div style={{ display: "flex", gap: 14, marginTop: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200, background: "#f7f9fb", borderRadius: 8, padding: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 8 }}>For and on behalf of SolarX Ltd</div>
+              {sigLessor && <img src={sigLessor} alt="Lessor Signature" style={{ maxHeight: 50, marginBottom: 4, display: "block" }} />}
+              <div style={{ fontSize: 9, color: "#6b7c8a" }}>Name: <span style={{ color: "#1a2e44", fontWeight: 600 }}>{sigLessorName}</span></div>
+              <div style={{ fontSize: 9, color: "#6b7c8a" }}>Date: <span style={{ color: "#1a2e44", fontWeight: 600 }}>{dateStr}</span></div>
+            </div>
+            <div style={{ flex: 1, minWidth: 200, background: "#f7f9fb", borderRadius: 8, padding: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 8 }}>For and on behalf of {clientName}</div>
+              {sigLessee && <img src={sigLessee} alt="Lessee Signature" style={{ maxHeight: 50, marginBottom: 4, display: "block" }} />}
+              <div style={{ fontSize: 9, color: "#6b7c8a" }}>Name: <span style={{ color: "#1a2e44", fontWeight: 600 }}>{sigLesseeName}</span></div>
+              <div style={{ fontSize: 9, color: "#6b7c8a" }}>Title: <span style={{ color: "#1a2e44", fontWeight: 600 }}>{sigLesseeTitle}</span></div>
+              <div style={{ fontSize: 9, color: "#6b7c8a" }}>Date: <span style={{ color: "#1a2e44", fontWeight: 600 }}>{dateStr}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24, paddingTop: 12, borderTop: "2px solid #1a2e44", fontSize: 8, color: "#94a3b8", textAlign: "center" }}>
+          SolarX Ltd — Solar Lease Heads of Terms — Generated {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={containerStyle}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{ borderRadius: "0 0 20px 20px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+        <img src={HEADER_IMG} alt="SolarX — Bermuda's First Solar Leasing Platform" style={{ width: "100%", height: "10vh", objectFit: "cover", objectPosition: "left center", display: "block" }} />
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "14px 14px 0" }}>
+
+        {/* ═══ CALCULATOR TAB ═══ */}
+        {tab === "calc" && (
+          <>
+            {/* Client Info */}
+            <div style={cardStyle}>
+              <div style={sectionTitle}>Client Details</div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={labelStyle}>Client Name</div>
+                <input style={inputStyle} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Enter client name" />
+              </div>
+              <div>
+                <div style={labelStyle}>Site Address</div>
+                <input style={inputStyle} value={siteAddress} onChange={e => setSiteAddress(e.target.value)} placeholder="Enter installation address" />
+              </div>
+            </div>
+
+            {/* Step 1 */}
+            <div style={cardStyle}>
+              <div style={sectionTitle}>Step 1: System &amp; Energy Costs</div>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }}>Tap any value to amend</div>
+              {[
+                ["Total System Cost", systemCost, setSystemCost, "number", "$"],
+                ["Current Monthly Belco Bill", monthlyBill, setMonthlyBill, "number", "$"],
+                ["Est. Monthly Solar Savings Yr 1", monthlySavingsY1, setMonthlySavingsY1, "number", "$"],
+                ["Annual Energy Inflation Rate", inflationRate, setInflationRate, "pct", "%"],
+              ].map(([label, val, setter, type, unit], i) => {
+                const isEditing = editingField === i;
+                const displayVal = type === "pct" ? (val * 100).toFixed(1) + "%" : fmt(val);
+                return (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < 3 ? "1px solid #f0f2f5" : "none" }}>
+                    <span style={{ fontSize: 13, color: "#475569", flex: 1 }}>{label}</span>
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        type="number"
+                        step={type === "pct" ? "0.1" : "1"}
+                        defaultValue={type === "pct" ? (val * 100).toFixed(1) : val}
+                        onBlur={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          setter(type === "pct" ? v / 100 : v);
+                          setEditingField(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.target.blur(); }
+                        }}
+                        style={{ width: 120, padding: "6px 10px", border: "2px solid #f59e0b", borderRadius: 8, fontSize: 14, fontWeight: 700, color: "#1a2e44", textAlign: "right", outline: "none", background: "#fffbeb" }}
+                      />
+                    ) : (
+                      <div
+                        onClick={() => setEditingField(i)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "4px 8px", borderRadius: 8, background: "#f7f9fb", border: "1.5px dashed #d1d9e0", minWidth: 90, justifyContent: "flex-end" }}
+                      >
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "#1a2e44" }}>{displayVal}</span>
+                        <span style={{ fontSize: 12, color: "#94a3b8" }}>✎</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Step 2 */}
+            <div style={cardStyle}>
+              <div style={sectionTitle}>Step 2: Lease Preferences</div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={labelStyle}>Upfront Deposit</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[0.10, 0.15, 0.20, 0.25, 0.30].map(v => (
+                    <button key={v} onClick={() => setDepositPct(v)} style={{
+                      padding: "8px 14px", borderRadius: 8, border: depositPct === v ? "2px solid #f59e0b" : "1.5px solid #d1d9e0",
+                      background: depositPct === v ? "#fffbeb" : "#fff", fontSize: 14, fontWeight: depositPct === v ? 700 : 500,
+                      color: depositPct === v ? "#d97706" : "#64748b", cursor: "pointer",
+                    }}>{pct(v, 0)}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={labelStyle}>Acceptable Monthly Cost Change</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[-0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25].map(v => (
+                    <button key={v} onClick={() => setCostChangePct(v)} style={{
+                      padding: "8px 12px", borderRadius: 8, border: costChangePct === v ? "2px solid #f59e0b" : "1.5px solid #d1d9e0",
+                      background: costChangePct === v ? "#fffbeb" : "#fff", fontSize: 13, fontWeight: costChangePct === v ? 700 : 500,
+                      color: costChangePct === v ? "#d97706" : "#64748b", cursor: "pointer",
+                    }}>{v === 0 ? "Same" : v < 0 ? pct(v, 0) : "+" + pct(v, 0)}</button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 8 }}>
+                  "Cost Change" = Year 1 total energy spend (lease + remaining Belco) vs. current bill. With inflation, this improves each year.
+                </div>
+              </div>
+            </div>
+
+            {/* Results */}
+            {result && result.tooLow && (
+              <div style={{ ...cardStyle, border: "2px solid #f59e0b", background: "#fffbeb", textAlign: "center", padding: 20 }}>
+                <div style={{ fontSize: 20, marginBottom: 6 }}>⚠️</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#d97706" }}>Payment too low to service this lease</div>
+                <div style={{ fontSize: 12, color: "#92400e", marginTop: 6 }}>Try increasing the Acceptable Cost Change or reducing the system cost. Your solar savings alone are not enough at this cost change level.</div>
+              </div>
+            )}
+            {result && !result.tooLow && (
+              <>
+                <div style={{ ...cardStyle, background: "linear-gradient(135deg, #1a2e44 0%, #2d4a6f 100%)", color: "#fff" }}>
+                  <div style={{ ...sectionTitle, color: "#94b8d8" }}>Your Lease Results</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#94b8d8", marginBottom: 2 }}>Monthly Payment</div>
+                      <div style={{ ...heroNum, color: "#f59e0b" }}>{fmt(result.monthlyLease)}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, color: "#94b8d8", marginBottom: 2 }}>Lease Length</div>
+                      <div style={{ ...heroNum, color: "#34d399" }}>{Math.floor(result.leaseYears)}y {Math.round((result.leaseYears % 1) * 12)}m</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+                    {[
+                      ["Deposit", fmt(result.deposit)],
+                      ["Amount Financed", fmt(result.financed)],
+                      ["Total Lease Payments", fmt(result.totalLease)],
+                      ["Total Interest", fmt(result.totalInterest)],
+                    ].map(([k, v], i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 11, color: "#94b8d8" }}>{k}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* During Lease */}
+                <div style={cardStyle}>
+                  <div style={sectionTitle}>During Your Lease</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+                    {[
+                      ["Year 1 Monthly Cost", fmt(result.y1MonthlyCost)],
+                      ["Current Monthly Bill", fmt(monthlyBill)],
+                      ["Year 1 Difference", (result.y1Difference >= 0 ? "+" : "") + fmt(result.y1Difference)],
+                      ["Total Interest", fmt(result.totalInterest)],
+                    ].map(([k, v], i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 11, color: "#6b7c8a" }}>{k}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: i === 2 ? (result.y1Difference > 0 ? "#ef4444" : "#059669") : "#1a2e44" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 25-Year Savings Hero */}
+                <div style={{
+                  ...cardStyle,
+                  background: "linear-gradient(135deg, #059669 0%, #34d399 100%)",
+                  color: "#fff", textAlign: "center", padding: "22px 16px", position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{ position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.1, lineHeight: 1 }}>☀</div>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.85, marginBottom: 4 }}>Estimated 25-Year Net Benefit</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.1, letterSpacing: -1 }}>{fmt(result.netBenefit25)}</div>
+                  <div style={{ fontSize: 12, color: "#1a2e44", marginTop: 6 }}>Net savings after all lease costs, accounting for panel degradation and energy inflation</div>
+                </div>
+
+                {/* After Lease details */}
+                <div style={{ ...cardStyle, border: "2px solid #34d399", background: "#f0fdf4" }}>
+                  <div style={{ ...sectionTitle, color: "#059669" }}>After Your Lease — You Own It!</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+                    {[
+                      ["Monthly Cost (Post-Lease)", fmt(result.postBelco)],
+                      ["Monthly Savings", fmt(result.postSaving)],
+                      ["Annual Savings (Post-Lease)", fmt(result.postSaving * 12)],
+                    ].map(([k, v], i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 11, color: "#6b7c8a" }}>{k}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#059669" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ═══ IMPACT TAB ═══ */}
+        {tab === "impact" && result && !result.tooLow && (
+          <>
+            {/* 25-Year Hero Banner */}
+            <div style={{
+              ...cardStyle,
+              background: "linear-gradient(135deg, #059669 0%, #34d399 100%)",
+              color: "#fff", textAlign: "center", padding: "24px 16px", position: "relative", overflow: "hidden", marginBottom: 10,
+            }}>
+              <div style={{ position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.1, lineHeight: 1 }}>☀</div>
+              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.85, marginBottom: 4 }}>Estimated 25-Year Net Benefit</div>
+              <div style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.1, letterSpacing: -1 }}>{fmt(result.netBenefit25)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>Conservative estimate after all lease costs, panel degradation, and energy inflation</div>
+            </div>
+
+            {/* Environmental impact cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {[
+                ["25yr CO₂ Saved", result.totalCO2.toFixed(0) + "t", "#059669", "#f0fdf4"],
+                ["Trees Equiv.", result.trees.toLocaleString() + "/yr", "#16a34a", "#f0fdf4"],
+                ["Cars Off Road", result.cars.toFixed(1) + "/yr", "#3b82f6", "#eff6ff"],
+              ].map(([k, v, c, bg], i) => (
+                <div key={i} style={{ ...cardStyle, background: bg, textAlign: "center", padding: "14px 8px" }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: c }}>{v}</div>
+                  <div style={{ fontSize: 10, color: "#6b7c8a", marginTop: 2 }}>{k}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Annual Cost Comparison */}
+            <div style={cardStyle}>
+              <div style={sectionTitle}>Annual Cost Comparison</div>
+              {[
+                ["Current (No Solar)", fmt(monthlyBill * 12), "#ef4444"],
+                ["Year 1 With Solar Lease", fmt(result.projection[0]?.totalCost), "#f59e0b"],
+                ["Year After Lease Ends", fmt(result.projection[Math.ceil(result.leaseYears)]?.totalCost || 0), "#059669"],
+              ].map(([label, val, color], i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < 2 ? "1px solid #f0f2f5" : "none" }}>
+                  <span style={{ fontSize: 13, color: "#64748b" }}>{label}</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color }}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Year-by-Year */}
+            <div style={cardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={sectionTitle}>25-Year Projection</div>
+                <button onClick={() => setShowProjection(!showProjection)} style={{ background: "none", border: "1px solid #d1d9e0", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#64748b", cursor: "pointer" }}>
+                  {showProjection ? "Hide" : "Show"}
+                </button>
+              </div>
+              {showProjection && (
+                <div style={{ overflowX: "auto", marginTop: 8 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 600 }}>
+                    <thead>
+                      <tr style={{ background: "#f7f9fb" }}>
+                        {["Yr", "Belco (No Solar)", "Solar Savings", "Lease", "Total Cost", "Saving", "Cum. Benefit", "Status"].map((h, i) => (
+                          <th key={i} style={{ padding: "8px 6px", textAlign: i === 7 ? "left" : "right", fontWeight: 600, color: "#6b7c8a", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.projection.map((r, i) => (
+                        <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafcfe" }}>
+                          <td style={{ padding: "6px", textAlign: "right", fontWeight: 600 }}>{r.year}</td>
+                          <td style={{ padding: "6px", textAlign: "right" }}>{fmt(r.belcoBill)}</td>
+                          <td style={{ padding: "6px", textAlign: "right", color: "#059669" }}>{fmt(r.solarSavings)}</td>
+                          <td style={{ padding: "6px", textAlign: "right", color: r.lease > 0 ? "#f59e0b" : "#94a3b8" }}>{fmt(r.lease)}</td>
+                          <td style={{ padding: "6px", textAlign: "right", fontWeight: 600 }}>{fmt(r.totalCost)}</td>
+                          <td style={{ padding: "6px", textAlign: "right", color: r.saving >= 0 ? "#059669" : "#ef4444" }}>{fmt(r.saving)}</td>
+                          <td style={{ padding: "6px", textAlign: "right", fontWeight: 700, color: r.cumBenefit >= 0 ? "#059669" : "#ef4444" }}>{fmt(r.cumBenefit)}</td>
+                          <td style={{ padding: "6px", fontSize: 10, color: r.status === "Lease active" ? "#f59e0b" : "#059669", fontWeight: 600, whiteSpace: "nowrap" }}>{r.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!showProjection && (
+                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Tap "Show" for the full 25-year breakdown.</div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ═══ HEADS OF TERMS TAB ═══ */}
+        {tab === "terms" && result && !result.tooLow && (
+          <>
+            <div style={{ ...cardStyle, borderTop: "4px solid #1a2e44" }}>
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#1a2e44", letterSpacing: 0.5 }}>HEADS OF TERMS</div>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>SolarX Solar Lease Agreement</div>
+                <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, marginTop: 6, padding: "4px 12px", background: "#fef2f2", borderRadius: 6, display: "inline-block" }}>
+                  SUBJECT TO CONTRACT | NOT LEGALLY BINDING
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <button onClick={() => setTab("calc")} style={{ fontSize: 12, color: "#3b82f6", background: "none", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontWeight: 600 }}>
+                    ✎ Edit Lease Values
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Parties */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>1. PARTIES</div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a", fontWeight: 500 }}>Lessor</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2e44" }}>SolarX Ltd</span>
+                </div>
+                <div style={{ padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a", fontWeight: 500, display: "block", marginBottom: 4 }}>Lessee (Client)</span>
+                  <input style={{ ...inputStyle, fontSize: 13, padding: "8px 10px" }} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Enter client name" />
+                </div>
+                <div style={{ padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a", fontWeight: 500, display: "block", marginBottom: 4 }}>Installation Address</span>
+                  <input style={{ ...inputStyle, fontSize: 13, padding: "8px 10px" }} value={siteAddress} onChange={e => setSiteAddress(e.target.value)} placeholder="Enter site address" />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a", fontWeight: 500 }}>Date</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2e44" }}>{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+                </div>
+              </div>
+
+              {/* 2. Solar System */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>2. SOLAR SYSTEM</div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a" }}>Total System Cost</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{fmt(systemCost)}</span>
+                </div>
+                <div style={{ padding: "6px 0" }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a", display: "block", marginBottom: 4 }}>System Description</span>
+                  <input style={{ ...inputStyle, fontSize: 12 }} value={systemDescription} onChange={e => setSystemDescription(e.target.value)} placeholder="Enter system spec (e.g. 50kW rooftop array, 120x LONGi panels)" />
+                </div>
+              </div>
+
+              {/* 3. Lease Terms */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>3. LEASE TERMS</div>
+                {[
+                  ["Upfront Deposit", fmt(result.deposit) + " (" + pct(depositPct, 0) + ")"],
+                  ["Monthly Lease Payment (Fixed)", fmt(result.monthlyLease)],
+                  ["Lease Term", Math.floor(result.leaseYears) + " yrs " + Math.round((result.leaseYears % 1) * 12) + " mths"],
+                  ["Total Lease Payments", fmt(result.totalLease)],
+                  ["Total Interest", fmt(result.totalInterest)],
+                  ["Annual Interest Rate", pct(DEFAULTS.interestRate, 0) + " (fixed)"],
+                ].map(([k, v], i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                    <span style={{ fontSize: 12, color: "#6b7c8a" }}>{k}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, textAlign: "right" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 4. Ownership */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>4. OWNERSHIP &amp; TRANSFER</div>
+                <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+                  <p style={{ margin: "0 0 6px" }}>During the Lease Term, the System remains the property of SolarX Ltd.</p>
+                  <p style={{ margin: "0 0 6px" }}>Upon completion of all lease payments, full ownership transfers to the Lessee at no additional cost.</p>
+                  <p style={{ margin: 0 }}>The Lessee is responsible for maintaining adequate insurance from the date of commissioning.</p>
+                </div>
+              </div>
+
+              {/* 5. Energy Estimates */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>5. ENERGY ESTIMATES (INDICATIVE ONLY)</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8, fontStyle: "italic" }}>
+                  Estimates only, not a guarantee. Actual results depend on weather, consumption, grid tariffs, and system performance.
+                </div>
+                {[
+                  ["Current Monthly Bill (est.)", fmt(monthlyBill)],
+                  ["Est. Monthly Solar Savings (Yr 1)", fmt(monthlySavingsY1)],
+                  ["Est. Monthly Cost During Lease (Yr 1)", fmt(result.y1MonthlyCost)],
+                  ["Est. Annual Savings After Lease", fmt(result.postSaving * 12)],
+                ].map(([k, v], i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f0f2f5" }}>
+                    <span style={{ fontSize: 12, color: "#6b7c8a" }}>{k}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 6. Conditions */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>6. CONDITIONS PRECEDENT</div>
+                <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.7 }}>
+                  {[
+                    "Approval by SolarX Ltd's funding partners.",
+                    "Completion of a satisfactory site survey and structural assessment.",
+                    "Lessee obtaining all necessary planning permissions and consents.",
+                    "Lessee maintaining a valid electricity supply agreement with BELCO.",
+                    "Satisfactory credit and reference checks on the Lessee.",
+                  ].map((c, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                      <span style={{ color: "#f59e0b", fontWeight: 700 }}>•</span>
+                      <span>{c}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 7. Validity */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 8, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>7. VALIDITY &amp; NEXT STEPS</div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f0f2f5", marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, color: "#6b7c8a" }}>Offer Valid Until</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>
+                    {new Date(new Date(agreedDate).getTime() + 14 * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+                  This Heads of Terms is not legally binding and records the parties' mutual understanding of principal commercial terms. A formal Lease Agreement will be prepared by SolarX Ltd's legal advisors upon agreement.
+                </div>
+              </div>
+
+              {/* 8. Signatures */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2e44", marginBottom: 12, borderBottom: "2px solid #f59e0b", paddingBottom: 4, display: "inline-block" }}>8. AGREED AND ACCEPTED</div>
+                <div style={{ fontSize: 12, color: "#475569", marginBottom: 16 }}>
+                  By signing below, the parties confirm their intention to proceed on the basis of these Heads of Terms.
+                </div>
+
+                {/* Lessor Signature */}
+                <div style={{ background: "#f7f9fb", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a2e44", marginBottom: 10 }}>For and on behalf of SolarX Ltd</div>
+                  <SignaturePad label="Signature" onSave={setSigLessor} saved={sigLessor} />
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 4 }}>Name</div>
+                    <input style={{ ...inputStyle, fontSize: 13 }} value={sigLessorName} onChange={e => setSigLessorName(e.target.value)} placeholder="Full name" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 4 }}>Date</div>
+                    <input style={{ ...inputStyle, fontSize: 13 }} type="date" value={agreedDate} onChange={e => setAgreedDate(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Lessee Signature */}
+                <div style={{ background: "#f7f9fb", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a2e44", marginBottom: 10 }}>For and on behalf of {clientName || "[Client]"}</div>
+                  <SignaturePad label="Signature" onSave={setSigLessee} saved={sigLessee} />
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 4 }}>Name</div>
+                    <input style={{ ...inputStyle, fontSize: 13 }} value={sigLesseeName} onChange={e => setSigLesseeName(e.target.value)} placeholder="Full name" />
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 4 }}>Title</div>
+                    <input style={{ ...inputStyle, fontSize: 13 }} value={sigLesseeTitle} onChange={e => setSigLesseeTitle(e.target.value)} placeholder="e.g. Director, Owner" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#6b7c8a", marginBottom: 4 }}>Date</div>
+                    <input style={{ ...inputStyle, fontSize: 13 }} type="date" value={agreedDate} onChange={e => setAgreedDate(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Completion Status & Submit */}
+                {sigLessor && sigLessee && sigLessorName && sigLesseeName && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ background: "#f0fdf4", border: "2px solid #34d399", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 12 }}>
+                      <div style={{ fontSize: 24, marginBottom: 4 }}>✓</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#059669" }}>Heads of Terms Complete</div>
+                      <div style={{ fontSize: 12, color: "#6b7c8a", marginTop: 4 }}>Both parties have signed.</div>
+                    </div>
+
+                    {!allFieldsComplete && (
+                      <div style={{ background: "#fffbeb", border: "1.5px solid #f59e0b", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#d97706", marginBottom: 4 }}>Missing fields:</div>
+                        <div style={{ fontSize: 11, color: "#92400e" }}>
+                          {[
+                            !clientName && "Client name",
+                            !siteAddress && "Site address",
+                            !sigLesseeTitle && "Lessee title",
+                          ].filter(Boolean).join(", ")}
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                        <button
+                          onClick={handleSubmit}
+                          disabled={!allFieldsComplete}
+                          style={{
+                            width: "100%", padding: "18px 0", border: "none", borderRadius: 12,
+                            background: allFieldsComplete ? "linear-gradient(135deg, #059669 0%, #34d399 100%)" : "#e2e8f0",
+                            color: allFieldsComplete ? "#fff" : "#94a3b8",
+                            fontSize: 16, fontWeight: 800, cursor: allFieldsComplete ? "pointer" : "default",
+                            letterSpacing: 0.3, boxShadow: allFieldsComplete ? "0 4px 12px rgba(5,150,105,0.3)" : "none",
+                          }}
+                        >
+                          📄 Save PDF &amp; Email to SolarX
+                        </button>
+                        {allFieldsComplete && (
+                          <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 8 }}>
+                            Opens signed document with Save, Print, and Email options
+                          </div>
+                        )}
+                      </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {(!result || result.tooLow) && tab !== "calc" && (
+          <div style={{ ...cardStyle, textAlign: "center", padding: 40 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>⚡</div>
+            <div style={{ fontSize: 14, color: "#64748b" }}>Enter your system details in the Calculator tab first.</div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Nav */}
+      <div style={{
+        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480,
+        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", borderTop: "1px solid #e2e8f0",
+        display: "flex", justifyContent: "space-around", padding: "8px 0 env(safe-area-inset-bottom, 8px)", zIndex: 100,
+      }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+            padding: "4px 16px", cursor: "pointer", color: tab === t.id ? "#f59e0b" : "#94a3b8", transition: "color 0.2s",
+          }}>
+            <span style={{ fontSize: 20 }}>{t.icon}</span>
+            <span style={{ fontSize: 10, fontWeight: tab === t.id ? 700 : 500 }}>{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SolarXApp />);
+  </script>
+</body>
+</html>
