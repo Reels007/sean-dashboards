@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co-Lab Space Manager</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #151822; } ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
+
+.header { background: linear-gradient(135deg, #1a1d2e 0%, #252940 100%); padding: 16px 24px; border-bottom: 2px solid #2d6a4f; display: flex; align-items: center; gap: 20px; }
+.header h1 { font-size: 22px; font-weight: 600; color: #fff; }
+.header .subtitle { color: #8b95a5; font-size: 13px; }
+.header .stats { margin-left: auto; display: flex; gap: 16px; }
+.stat-box { background: rgba(45,106,79,0.12); border: 1px solid rgba(45,106,79,0.3); border-radius: 8px; padding: 6px 14px; text-align: center; }
+.stat-box .num { font-size: 20px; font-weight: 700; color: #52b788; }
+.stat-box .label { font-size: 10px; color: #8b95a5; text-transform: uppercase; letter-spacing: 1px; }
+.stat-box.warn .num { color: #f59e0b; }
+.stat-box.loss .num { color: #ef4444; }
+
+.nav-tabs { display: flex; background: #151822; border-bottom: 1px solid #2a2d3e; padding: 0 24px; }
+.nav-tab { padding: 10px 18px; font-size: 13px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-tab.active { color: #52b788; border-bottom-color: #52b788; }
+.nav-tab:hover { color: #aaa; }
+
+.page { display: none; height: calc(100vh - 120px); overflow-y: auto; }
+.page.active { display: block; }
+
+/* === FLOOR PLAN PAGE === */
+.floor-layout { display: flex; height: 100%; }
+.floor-main { flex: 1; padding: 20px; overflow-y: auto; }
+.floor-sidebar { width: 400px; background: #151822; border-left: 1px solid #2a2d3e; overflow-y: auto; padding: 16px; }
+
+.zone { margin-bottom: 20px; background: #181b28; border-radius: 10px; border: 1px solid #2a2d3e; overflow: hidden; }
+.zone-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+.zone-header h3 { font-size: 14px; font-weight: 600; }
+.zone-header .zone-stats { font-size: 12px; color: #8b95a5; }
+.zone-offices .zone-header { background: linear-gradient(90deg, rgba(99,102,241,0.12), transparent); border-bottom: 2px solid #6366f1; }
+.zone-offices h3 { color: #818cf8; }
+.zone-cubicles .zone-header { background: linear-gradient(90deg, rgba(45,106,79,0.12), transparent); border-bottom: 2px solid #2d6a4f; }
+.zone-cubicles h3 { color: #52b788; }
+.zone-hotdesks .zone-header { background: linear-gradient(90deg, rgba(234,179,8,0.12), transparent); border-bottom: 2px solid #ca8a04; }
+.zone-hotdesks h3 { color: #facc15; }
+.zone-body { padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; }
+.zone-body.drag-over { background: rgba(82,183,136,0.06); outline: 2px dashed #52b788; outline-offset: -3px; }
+
+.desk-card { background: #1e2132; border: 1px solid #2a2d3e; border-radius: 7px; padding: 8px 12px; min-width: 170px; cursor: grab; transition: all 0.15s; position: relative; }
+.desk-card:hover { border-color: #52b788; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+.desk-card.dragging { opacity: 0.3; }
+.desk-card .t-name { font-weight: 600; font-size: 13px; color: #fff; }
+.desk-card .t-rate { font-size: 12px; color: #52b788; margin-top: 2px; }
+.desk-card .t-meta { font-size: 10px; color: #555; margin-top: 2px; }
+.desk-card .t-tag { position: absolute; top: 6px; right: 6px; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+.desk-card .t-end { font-size: 10px; color: #ef4444; margin-top: 1px; }
+.tag-A { background: rgba(45,106,79,0.2); color: #52b788; }
+.tag-E { background: rgba(99,102,241,0.2); color: #818cf8; }
+.changed-card { border-color: #ca8a04 !important; }
+.empty-slot { background: rgba(255,255,255,0.02); border: 1px dashed #2a2d3e; border-radius: 7px; padding: 8px 12px; min-width: 170px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 12px; }
+
+/* === TABLES === */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th { text-align: left; padding: 7px 8px; color: #8b95a5; font-weight: 500; border-bottom: 1px solid #2a2d3e; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.data-table td { padding: 7px 8px; border-bottom: 1px solid rgba(42,45,62,0.4); }
+.data-table tr:hover { background: rgba(82,183,136,0.04); }
+.data-table .total-row { font-weight: 700; border-top: 2px solid #2d6a4f; }
+.data-table .total-row td { color: #52b788; padding-top: 10px; }
+.changed-row { background: rgba(234,179,8,0.08) !important; }
+.changed-row td { color: #facc15 !important; }
+
+/* === CHARTS PAGE === */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+.chart-card { background: #181b28; border: 1px solid #2a2d3e; border-radius: 10px; padding: 16px; }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-card h3 { font-size: 13px; color: #8b95a5; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+canvas { width: 100% !important; }
+
+/* === EMAIL PAGE === */
+.email-page { padding: 20px; }
+.email-preview { background: #1e2132; border-radius: 8px; padding: 14px; margin-bottom: 10px; border: 1px solid #2a2d3e; }
+.email-preview h4 { font-size: 12px; color: #52b788; margin-bottom: 6px; }
+.email-to { font-size: 11px; color: #8b95a5; margin-bottom: 3px; }
+.email-subject { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.email-body { font-size: 11px; color: #aaa; line-height: 1.5; white-space: pre-wrap; }
+
+/* === COMMON === */
+.btn { padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+.btn-primary { background: #2d6a4f; color: #fff; }
+.btn-primary:hover { background: #40916c; }
+.btn-outline { background: transparent; border: 1px solid #2a2d3e; color: #8b95a5; }
+.btn-outline:hover { border-color: #52b788; color: #52b788; }
+.btn-warn { background: #92400e; color: #fbbf24; }
+.actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #1e2132; border-radius: 10px; padding: 20px; width: 380px; border: 1px solid #2a2d3e; }
+.modal h3 { margin-bottom: 14px; color: #fff; font-size: 16px; }
+.modal label { display: block; font-size: 12px; color: #8b95a5; margin-top: 10px; }
+.modal select, .modal input { width: 100%; padding: 7px 10px; background: #151822; border: 1px solid #2a2d3e; border-radius: 5px; color: #e0e0e0; font-size: 13px; margin-top: 3px; }
+.modal select:focus, .modal input:focus { outline: none; border-color: #52b788; }
+.modal .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+.toast { position: fixed; bottom: 20px; right: 20px; background: #2d6a4f; color: #fff; padding: 10px 18px; border-radius: 7px; font-size: 13px; z-index: 200; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+.changes-banner { display: none; background: linear-gradient(90deg, rgba(234,179,8,0.08), rgba(234,179,8,0.03)); border: 1px solid rgba(234,179,8,0.2); border-radius: 7px; padding: 10px 14px; margin-bottom: 14px; align-items: center; gap: 10px; }
+.changes-banner.show { display: flex; }
+.changes-banner .changes-text { flex: 1; font-size: 12px; color: #facc15; }
+
+.kpi-row { display: flex; gap: 12px; margin-bottom: 16px; }
+.kpi { flex: 1; background: #181b28; border: 1px solid #2a2d3e; border-radius: 8px; padding: 12px; text-align: center; }
+.kpi .kpi-val { font-size: 24px; font-weight: 700; }
+.kpi .kpi-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.kpi .kpi-sub { font-size: 11px; color: #555; margin-top: 4px; }
+.kpi-green .kpi-val { color: #52b788; }
+.kpi-blue .kpi-val { color: #818cf8; }
+.kpi-yellow .kpi-val { color: #facc15; }
+.kpi-red .kpi-val { color: #ef4444; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #8b95a5; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Co-Lab Space Manager</h1>
+    <div class="subtitle">Ignite Bermuda Coworking - April 2026</div>
+  </div>
+  <div class="stats">
+    <div class="stat-box"><div class="num" id="stat-tenants">0</div><div class="label">Tenants</div></div>
+    <div class="stat-box"><div class="num" id="stat-monthly">$0</div><div class="label">Monthly Rev</div></div>
+    <div class="stat-box"><div class="num" id="stat-occupancy">0%</div><div class="label">Occupancy</div></div>
+    <div class="stat-box warn"><div class="num" id="stat-expenses">$4,808</div><div class="label">Monthly Cost</div></div>
+    <div class="stat-box" id="stat-pl-box"><div class="num" id="stat-pl">$0</div><div class="label">Net P/L</div></div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" data-page="floorplan" onclick="switchPage('floorplan')">Floor Plan</div>
+  <div class="nav-tab" data-page="schedule" onclick="switchPage('schedule')">Rent Schedule</div>
+  <div class="nav-tab" data-page="charts" onclick="switchPage('charts')">Analytics</div>
+  <div class="nav-tab" data-page="emails" onclick="switchPage('emails')">Emails</div>
+</div>
+
+<!-- FLOOR PLAN PAGE -->
+<div class="page active" id="page-floorplan">
+  <div class="floor-layout">
+    <div class="floor-main">
+      <div class="changes-banner" id="changesBanner">
+        <div class="changes-text"><strong>Pending changes:</strong> <span id="changesText"></span></div>
+        <button class="btn btn-warn" onclick="resetChanges()">Undo All</button>
+      </div>
+      <div class="zone zone-offices" id="zone-office">
+        <div class="zone-header"><h3>Private Offices ($750/mo)</h3><span class="zone-stats" id="stats-office"></span></div>
+        <div class="zone-body" data-zone="office" id="body-office"></div>
+      </div>
+      <div class="zone zone-cubicles" id="zone-cubicle">
+        <div class="zone-header"><h3>Cubicles ($350-504/mo by year)</h3><span class="zone-stats" id="stats-cubicle"></span></div>
+        <div class="zone-body" data-zone="cubicle" id="body-cubicle"></div>
+      </div>
+      <div class="zone zone-hotdesks" id="zone-hotdesk">
+        <div class="zone-header"><h3>Hot Desks ($250-350/mo)</h3><span class="zone-stats" id="stats-hotdesk"></span></div>
+        <div class="zone-body" data-zone="hotdesk" id="body-hotdesk"></div>
+      </div>
+    </div>
+    <div class="floor-sidebar" id="floorSidebar"></div>
+  </div>
+</div>
+
+<!-- RENT SCHEDULE PAGE -->
+<div class="page" id="page-schedule">
+  <div style="padding:20px" id="scheduleContent"></div>
+</div>
+
+<!-- CHARTS PAGE -->
+<div class="page" id="page-charts">
+  <div class="charts-grid" id="chartsContent"></div>
+</div>
+
+<!-- EMAILS PAGE -->
+<div class="page" id="page-emails">
+  <div class="email-page" id="emailsContent"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="moveModal">
+  <div class="modal">
+    <h3 id="modalTitle">Move Tenant</h3>
+    <label>Tenant</label>
+    <div id="modalTenantName" style="font-size:15px;font-weight:600;color:#fff;padding:6px 0"></div>
+    <label>Current Space</label>
+    <div id="modalCurrentSpace" style="font-size:13px;color:#8b95a5;padding:3px 0"></div>
+    <label for="newSpace">Move to</label>
+    <select id="newSpace">
+      <option value="office">Private Office ($750/mo)</option>
+      <option value="cubicle">Cubicle ($350-504/mo)</option>
+      <option value="hotdesk">Hot Desk ($250/mo)</option>
+    </select>
+    <label for="newRate">New Monthly Rate ($)</label>
+    <input type="number" id="newRate">
+    <label for="effectiveDate">Effective Date</label>
+    <input type="date" id="effectiveDate" value="2026-05-01">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmMove()">Confirm Move</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA - sourced from Co-Lab Tracking.xlsx Contracted 2026
+// ============================================================
+var RATES = {
+  office: { base: 750, label: 'Private Office' },
+  smalloffice: { base: 780, label: 'Small Office' },
+  cubicle: { year1: 350, year2: 420, year3: 504, label: 'Cubicle' },
+  hotdesk: { base: 250, label: 'Hot Desk' }
+};
+var CAPACITY = { office: 4, cubicle: 13, hotdesk: 6 };
+var MONTHLY_EXPENSE = 4808; // $57,692 / 12
+
+// Current active tenants with accurate contract data from Contracted 2026
+var tenants = [
+  { id: 1, name: 'Eugenia Robinson', email: 'ladygloriousglow11@gmail.com', type: 'smalloffice', displayZone: 'office', rate: 780, tag: 'A', start: '2026-01-01', end: '2026-04-30', year: 2, notes: 'Moves to Cubicle $350 May 1', status: 'ending' },
+  { id: 2, name: 'Dayla Burgess', email: '', type: 'hotdesk', displayZone: 'hotdesk', rate: 250, tag: 'A', start: '2024-10-15', end: null, year: 2, notes: 'Health Council Sponsorship thru Feb 2026', status: 'active' },
+  { id: 3, name: 'Holly Mazar-Fox', email: 'holly@mazarfox.com', type: 'cubicle', displayZone: 'cubicle', rate: 504, tag: 'A', start: '2026-04-01', end: null, year: 3, notes: 'Year 3 renewal', status: 'active' },
+  { id: 4, name: 'Francesca Rowlinson', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 450, tag: 'E', start: '2025-11-01', end: null, year: 1, notes: 'Strata-G', status: 'active' },
+  { id: 5, name: 'Jailyn Boddington', email: '', type: 'hotdesk', displayZone: 'hotdesk', rate: 350, tag: 'E', start: '2025-11-01', end: null, year: 1, notes: 'Strata-G', status: 'active' },
+  { id: 6, name: 'Chardonae Rawlins', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 420, tag: 'A', start: '2026-04-01', end: null, year: 2, notes: 'Year 2 renewal', status: 'active' },
+  { id: 7, name: 'Gwendolyn Creary', email: 'parentguidebda@gmail.com', type: 'cubicle', displayZone: 'cubicle', rate: 504, tag: 'A', start: '2026-04-01', end: null, year: 3, notes: 'Year 3 renewal', status: 'active' },
+  { id: 8, name: 'James Robinson', email: 'james@cactus.bm', type: 'hotdesk', displayZone: 'hotdesk', rate: 250, tag: 'A', start: '2026-04-01', end: null, year: 1, notes: 'Downgraded from Office ($938) Apr 1', status: 'active' },
+  { id: 9, name: 'Milton Raposo', email: 'mrepose@yahoo.com', type: 'cubicle', displayZone: 'cubicle', rate: 504, tag: 'A', start: '2026-04-01', end: null, year: 3, notes: 'Year 3 renewal', status: 'active' },
+  { id: 10, name: 'Heejae Cho', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 450, tag: 'E', start: '2025-08-01', end: null, year: 1, notes: '', status: 'active' },
+  { id: 11, name: 'Dwayne Trott', email: 'dwayne@cess-bda.com', type: 'office', displayZone: 'office', rate: 750, tag: 'A', start: '2025-10-01', end: null, year: 1, notes: '', status: 'active' },
+  { id: 12, name: 'Priya Suagh', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 420, tag: 'A', start: '2025-10-01', end: null, year: 2, notes: '', status: 'active' },
+  { id: 13, name: 'Melissa Jolliffe', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 450, tag: 'E', start: '2026-01-05', end: null, year: 1, notes: '', status: 'active' },
+  { id: 14, name: 'Wanda Robinson', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 350, tag: 'A', start: '2026-02-16', end: null, year: 1, notes: '', status: 'active' },
+  { id: 15, name: 'Zayne Sinclair', email: '', type: 'office', displayZone: 'office', rate: 750, tag: 'A', start: '2026-04-01', end: null, year: 1, notes: 'Upgraded from Cubicle ($350) Apr 1', status: 'active' },
+  { id: 16, name: 'Joyce Hayward', email: '', type: 'cubicle', displayZone: 'cubicle', rate: 450, tag: 'E', start: '2026-05-01', end: null, year: 1, notes: 'Starting May 1', status: 'upcoming' },
+];
+
+// Historical annual revenue from Rental Revenue sheets
+var annualRevenue = [
+  { year: 2022, hotdesk: 5630, cubicle: 14938, office: 18663, event: 1215, boardroom: 80, studio: 0, total: 40525 },
+  { year: 2023, hotdesk: 7380, cubicle: 17300, office: 35375, event: 1085, boardroom: 1100, studio: 2835, total: 65075 },
+  { year: 2024, hotdesk: 10525, cubicle: 44200, office: 25538, event: 805, boardroom: 270, studio: 635, total: 81973 },
+  { year: 2025, hotdesk: 11700, cubicle: 42225, office: 28656, event: 3340, boardroom: 515, studio: 3020, total: 89456 },
+  { year: 2026, hotdesk: 3100, cubicle: 17247, office: 10153, event: 1185, boardroom: 400, studio: 120, total: 32205, ytd: true },
+];
+
+// 2026 monthly revenue (actuals Jan-Apr)
+var monthly2026 = [
+  { month: 'Jan', hotdesk: 950, cubicle: 4080, office: 2468, event: 0, boardroom: 0, studio: 120, total: 7618 },
+  { month: 'Feb', hotdesk: 350, cubicle: 4080, office: 2468, event: 895, boardroom: 0, studio: 0, total: 7793 },
+  { month: 'Mar', hotdesk: 950, cubicle: 4430, office: 2468, event: 145, boardroom: 0, studio: 0, total: 7993 },
+  { month: 'Apr', hotdesk: 850, cubicle: 4657, office: 2749, event: 145, boardroom: 400, studio: 0, total: 8801 },
+];
+
+// 2025 monthly revenue for comparison
+var monthly2025 = [
+  { month: 'Jan', total: 8025 }, { month: 'Feb', total: 6760 }, { month: 'Mar', total: 8000 },
+  { month: 'Apr', total: 8462 }, { month: 'May', total: 7386 }, { month: 'Jun', total: 9006 },
+  { month: 'Jul', total: 7611 }, { month: 'Aug', total: 7311 }, { month: 'Sep', total: 7061 },
+  { month: 'Oct', total: 6353 }, { month: 'Nov', total: 7248 }, { month: 'Dec', total: 6233 },
+];
+
+// Tenant counts by month (from Tenants sheet and Contracted 2026 AC/AD)
+var tenantCounts = {
+  2022: [7,8,10,9,8,8,9,9,9,9,10,9],
+  2023: [10,12,14,14,17,15,12,12,13,14,16,null],
+  2025: [21,19,null,18,null,null,null,null,null,null,null,null],
+  2026: [15,null,null,null,null,null,null,null,null,null,null,null],
+};
+
+// Event bookings 2026
+var events2026 = [
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-01-20' },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-02-17' },
+  { name: 'Rashun Robinson', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-02-06' },
+  { name: 'Rashun Robinson', type: 'Event Space', duration: '6-hours', rate: 280, date: '2026-02-07' },
+  { name: 'Rashun Robinson', type: 'Event Space', duration: '7-hours', rate: 325, date: '2026-02-08' },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-03-17' },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-04-21' },
+  { name: 'BDA Dev Agency', type: 'Boardroom', duration: 'Full day', rate: 500, date: '2026-04-01' },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-05-19', upcoming: true },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-06-16', upcoming: true },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-07-21', upcoming: true },
+  { name: 'Erica Fulton', type: 'Event Space', duration: '3-hours', rate: 145, date: '2026-08-18', upcoming: true },
+];
+
+var originalTenants = JSON.parse(JSON.stringify(tenants));
+var pendingChanges = [];
+var movingTenantId = null;
+var draggedTenantId = null;
+
+// ============================================================
+// UTILITY
+// ============================================================
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function formatDate(d) {
+  if (!d) return 'Ongoing';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatMoney(n) { return '$' + n.toLocaleString(); }
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+function getCurrentMonthly() {
+  return tenants.filter(function(t){ return t.status !== 'upcoming'; }).reduce(function(s,t){ return s + t.rate; }, 0);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('[data-page="' + page + '"]').classList.add('active');
+  if (page === 'charts') renderCharts();
+  if (page === 'schedule') renderSchedulePage();
+  if (page === 'emails') renderEmailsPage();
+}
+
+// ============================================================
+// HEADER STATS
+// ============================================================
+function updateStats() {
+  var active = tenants.filter(function(t){ return t.status !== 'upcoming'; }).length;
+  var monthly = getCurrentMonthly();
+  var totalCap = CAPACITY.office + CAPACITY.cubicle + CAPACITY.hotdesk;
+  var pl = monthly - MONTHLY_EXPENSE;
+  document.getElementById('stat-tenants').textContent = active;
+  document.getElementById('stat-monthly').textContent = formatMoney(monthly);
+  document.getElementById('stat-occupancy').textContent = Math.round(active / totalCap * 100) + '%';
+  document.getElementById('stat-pl').textContent = (pl >= 0 ? '+' : '') + formatMoney(pl);
+  var plBox = document.getElementById('stat-pl-box');
+  plBox.className = pl >= 0 ? 'stat-box' : 'stat-box loss';
+}
+
+// ============================================================
+// FLOOR PLAN
+// ============================================================
+function renderFloorPlan() {
+  ['office','cubicle','hotdesk'].forEach(function(zone) {
+    var body = document.getElementById('body-' + zone);
+    var zoneTenants = tenants.filter(function(t) { return t.displayZone === zone; });
+    var cap = CAPACITY[zone];
+    var stats = document.getElementById('stats-' + zone);
+    var totalRate = zoneTenants.reduce(function(s,t){ return s + t.rate; }, 0);
+    stats.textContent = zoneTenants.length + '/' + cap + ' occupied - ' + formatMoney(totalRate) + '/mo';
+
+    while (body.firstChild) body.removeChild(body.firstChild);
+
+    zoneTenants.forEach(function(t) {
+      var changed = pendingChanges.find(function(c){ return c.tenantId === t.id; });
+      var card = el('div', 'desk-card' + (changed ? ' changed-card' : ''));
+      card.draggable = true;
+      card.dataset.tenantId = t.id;
+
+      card.appendChild(el('div', 't-name', t.name));
+
+      var rateDiv = el('div', 't-rate', formatMoney(t.rate) + '/mo');
+      if (changed) {
+        var was = el('span', '', ' (was ' + formatMoney(changed.oldRate) + ')');
+        was.style.color = '#facc15';
+        rateDiv.appendChild(was);
+      }
+      card.appendChild(rateDiv);
+
+      var typeLabel = t.type === 'smalloffice' ? 'Small Office' : (RATES[t.type] ? RATES[t.type].label : t.type);
+      var meta = typeLabel;
+      if (t.year && t.type === 'cubicle') meta += ' (Yr ' + t.year + ')';
+      meta += ' | Since ' + formatDate(t.start);
+      card.appendChild(el('div', 't-meta', meta));
+
+      if (t.end) {
+        card.appendChild(el('div', 't-end', 'Ends: ' + formatDate(t.end)));
+      }
+      if (t.status === 'upcoming') {
+        var upTag = el('div', 't-end');
+        upTag.style.color = '#f59e0b';
+        upTag.textContent = 'Starts: ' + formatDate(t.start);
+        card.appendChild(upTag);
+      }
+
+      card.appendChild(el('span', 't-tag tag-' + t.tag, t.tag === 'A' ? 'Annual' : 'External'));
+
+      card.addEventListener('dragstart', onDragStart);
+      card.addEventListener('dragend', onDragEnd);
+      card.addEventListener('dblclick', (function(id){ return function(){ openMoveModal(id); }; })(t.id));
+      body.appendChild(card);
+    });
+
+    for (var i = zoneTenants.length; i < cap; i++) {
+      body.appendChild(el('div', 'empty-slot', 'Available'));
+    }
+    body.ondragover = onDragOver;
+    body.ondragleave = onDragLeave;
+    body.ondrop = onDrop;
+  });
+
+  renderFloorSidebar();
+}
+
+function renderFloorSidebar() {
+  var sb = document.getElementById('floorSidebar');
+  while (sb.firstChild) sb.removeChild(sb.firstChild);
+
+  // Quick rent schedule
+  sb.appendChild(el('h3', '', 'Current Rent Schedule'));
+  sb.firstChild.style.cssText = 'font-size:13px;color:#8b95a5;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px';
+
+  var table = el('table', 'data-table');
+  var thead = el('thead');
+  var hrow = el('tr');
+  ['Tenant','Type','Rate','End'].forEach(function(h){ hrow.appendChild(el('th', '', h)); });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  var tbody = el('tbody');
+  var sorted = tenants.slice().sort(function(a,b){
+    var o = {office:0, smalloffice:0, cubicle:1, hotdesk:2};
+    return (o[a.type]||0) - (o[b.type]||0) || b.rate - a.rate;
+  });
+  var total = 0;
+
+  sorted.forEach(function(t) {
+    var tr = el('tr');
+    var changed = pendingChanges.find(function(c){ return c.tenantId === t.id; });
+    if (changed) tr.className = 'changed-row';
+    if (t.status === 'upcoming') tr.style.opacity = '0.5';
+
+    tr.appendChild(el('td', '', t.name));
+    var typeLabel = t.type === 'smalloffice' ? 'Sm.Office' : (RATES[t.type] ? RATES[t.type].label : t.type);
+    tr.appendChild(el('td', '', typeLabel));
+    tr.appendChild(el('td', '', formatMoney(t.rate)));
+
+    var endTd = el('td');
+    if (t.end) { endTd.style.color = '#ef4444'; endTd.textContent = formatDate(t.end); }
+    else if (t.status === 'upcoming') { endTd.style.color = '#f59e0b'; endTd.textContent = 'Starts ' + formatDate(t.start); }
+    else { endTd.textContent = 'Ongoing'; endTd.style.color = '#444'; }
+    tr.appendChild(endTd);
+    tbody.appendChild(tr);
+    if (t.status !== 'upcoming') total += t.rate;
+  });
+
+  var totalRow = el('tr', 'total-row');
+  totalRow.appendChild(el('td', '', 'Monthly Total'));
+  totalRow.appendChild(el('td'));
+  totalRow.appendChild(el('td', '', formatMoney(total)));
+  totalRow.appendChild(el('td'));
+  tbody.appendChild(totalRow);
+  table.appendChild(tbody);
+  sb.appendChild(table);
+
+  // Event bookings section
+  var evTitle = el('h3', '', 'Event & Boardroom Bookings (2026)');
+  evTitle.style.cssText = 'font-size:13px;color:#8b95a5;text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px';
+  sb.appendChild(evTitle);
+
+  var evTable = el('table', 'data-table');
+  var evHead = el('thead');
+  var evHRow = el('tr');
+  ['Date','Client','Duration','Rate'].forEach(function(h){ evHRow.appendChild(el('th', '', h)); });
+  evHead.appendChild(evHRow);
+  evTable.appendChild(evHead);
+  var evBody = el('tbody');
+  var evTotal = 0;
+  events2026.forEach(function(ev) {
+    var tr = el('tr');
+    if (ev.upcoming) tr.style.opacity = '0.5';
+    tr.appendChild(el('td', '', formatDate(ev.date)));
+    tr.appendChild(el('td', '', ev.name));
+    tr.appendChild(el('td', '', ev.duration));
+    tr.appendChild(el('td', '', formatMoney(ev.rate)));
+    evBody.appendChild(tr);
+    evTotal += ev.rate;
+  });
+  var evTotalRow = el('tr', 'total-row');
+  evTotalRow.appendChild(el('td', '', 'Total'));
+  evTotalRow.appendChild(el('td'));
+  evTotalRow.appendChild(el('td'));
+  evTotalRow.appendChild(el('td', '', formatMoney(evTotal)));
+  evBody.appendChild(evTotalRow);
+  evTable.appendChild(evBody);
+  sb.appendChild(evTable);
+
+  // Pending changes actions
+  if (pendingChanges.length) {
+    var acts = el('div', 'actions');
+    acts.style.marginTop = '16px';
+    var dlBtn = el('button', 'btn btn-primary', 'Download CSV');
+    dlBtn.addEventListener('click', downloadSchedule);
+    acts.appendChild(dlBtn);
+    sb.appendChild(acts);
+  }
+}
+
+// ============================================================
+// RENT SCHEDULE PAGE (full detail)
+// ============================================================
+function renderSchedulePage() {
+  var container = document.getElementById('scheduleContent');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  var monthly = getCurrentMonthly();
+  var kpiRow = el('div', 'kpi-row');
+  var kpis = [
+    { val: formatMoney(monthly), label: 'Monthly Revenue', sub: 'Active tenants only', cls: 'kpi-green' },
+    { val: formatMoney(monthly * 12), label: 'Annual Projection', sub: 'At current rates', cls: 'kpi-blue' },
+    { val: formatMoney(MONTHLY_EXPENSE), label: 'Monthly Expenses', sub: '$42k rent + $15k cleaning', cls: 'kpi-yellow' },
+    { val: (monthly >= MONTHLY_EXPENSE ? '+' : '') + formatMoney(monthly - MONTHLY_EXPENSE), label: 'Net Monthly P/L', sub: 'Revenue - expenses', cls: monthly >= MONTHLY_EXPENSE ? 'kpi-green' : 'kpi-red' },
+  ];
+  kpis.forEach(function(k) {
+    var kpi = el('div', 'kpi ' + k.cls);
+    kpi.appendChild(el('div', 'kpi-val', k.val));
+    kpi.appendChild(el('div', 'kpi-label', k.label));
+    kpi.appendChild(el('div', 'kpi-sub', k.sub));
+    kpiRow.appendChild(kpi);
+  });
+  container.appendChild(kpiRow);
+
+  // Full table
+  var table = el('table', 'data-table');
+  var thead = el('thead');
+  var hrow = el('tr');
+  ['Tenant','Space Type','Rate/mo','Tag','Year','Start Date','End Date','Status','Notes'].forEach(function(h){ hrow.appendChild(el('th', '', h)); });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  var tbody = el('tbody');
+  var sorted = tenants.slice().sort(function(a,b){
+    var o = {office:0, smalloffice:0, cubicle:1, hotdesk:2};
+    return (o[a.type]||0) - (o[b.type]||0) || b.rate - a.rate;
+  });
+
+  sorted.forEach(function(t) {
+    var tr = el('tr');
+    var changed = pendingChanges.find(function(c){ return c.tenantId === t.id; });
+    if (changed) tr.className = 'changed-row';
+    if (t.status === 'upcoming') tr.style.opacity = '0.6';
+
+    tr.appendChild(el('td', '', t.name));
+    var typeLabel = t.type === 'smalloffice' ? 'Small Office' : (RATES[t.type] ? RATES[t.type].label : t.type);
+    tr.appendChild(el('td', '', typeLabel));
+    tr.appendChild(el('td', '', formatMoney(t.rate)));
+    tr.appendChild(el('td', '', t.tag === 'A' ? 'Annual' : 'External'));
+    tr.appendChild(el('td', '', t.year ? 'Yr ' + t.year : '-'));
+    tr.appendChild(el('td', '', formatDate(t.start)));
+
+    var endTd = el('td');
+    if (t.end) { endTd.style.color = '#ef4444'; endTd.textContent = formatDate(t.end); }
+    else { endTd.textContent = '-'; endTd.style.color = '#444'; }
+    tr.appendChild(endTd);
+
+    var statusTd = el('td');
+    var colors = { active: '#52b788', ending: '#ef4444', upcoming: '#f59e0b' };
+    statusTd.style.color = colors[t.status] || '#888';
+    statusTd.style.fontWeight = '600';
+    statusTd.textContent = t.status.charAt(0).toUpperCase() + t.status.slice(1);
+    tr.appendChild(statusTd);
+
+    tr.appendChild(el('td', '', t.notes));
+    tbody.appendChild(tr);
+  });
+
+  var totalRow = el('tr', 'total-row');
+  totalRow.appendChild(el('td', '', 'Active Total (' + tenants.filter(function(t){return t.status!=='upcoming';}).length + ' tenants)'));
+  for (var i = 0; i < 7; i++) totalRow.appendChild(el('td'));
+  totalRow.children[2].textContent = formatMoney(getCurrentMonthly());
+  totalRow.appendChild(el('td'));
+  tbody.appendChild(totalRow);
+  table.appendChild(tbody);
+  container.appendChild(table);
+
+  if (pendingChanges.length) {
+    var acts = el('div', 'actions');
+    acts.style.marginTop = '14px';
+    var dlBtn = el('button', 'btn btn-primary', 'Download Updated Schedule CSV');
+    dlBtn.addEventListener('click', downloadSchedule);
+    acts.appendChild(dlBtn);
+    container.appendChild(acts);
+  }
+}
+
+// ============================================================
+// CHARTS / ANALYTICS PAGE
+// ============================================================
+function renderCharts() {
+  var container = document.getElementById('chartsContent');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  // KPIs
+  var kpiCard = el('div', 'chart-card full');
+  var kpiRow = el('div', 'kpi-row');
+  var ytdRev = annualRevenue[4].total;
+  var prevYtdRev = monthly2025.slice(0,4).reduce(function(s,m){return s+m.total;},0);
+  var yoyChange = ((ytdRev - prevYtdRev) / prevYtdRev * 100).toFixed(1);
+  var avgMonthly26 = Math.round(ytdRev / 4);
+  var projected26 = avgMonthly26 * 12;
+
+  [
+    { val: formatMoney(ytdRev), label: '2026 YTD Revenue', sub: 'Jan - Apr actual', cls: 'kpi-green' },
+    { val: (yoyChange >= 0 ? '+' : '') + yoyChange + '%', label: 'vs 2025 YTD', sub: formatMoney(prevYtdRev) + ' same period', cls: yoyChange >= 0 ? 'kpi-green' : 'kpi-red' },
+    { val: formatMoney(avgMonthly26), label: 'Avg Monthly (2026)', sub: '4 months data', cls: 'kpi-blue' },
+    { val: formatMoney(projected26), label: 'Projected 2026', sub: 'At current average', cls: 'kpi-yellow' },
+  ].forEach(function(k) {
+    var kpi = el('div', 'kpi ' + k.cls);
+    kpi.appendChild(el('div', 'kpi-val', k.val));
+    kpi.appendChild(el('div', 'kpi-label', k.label));
+    kpi.appendChild(el('div', 'kpi-sub', k.sub));
+    kpiRow.appendChild(kpi);
+  });
+  kpiCard.appendChild(kpiRow);
+  container.appendChild(kpiCard);
+
+  // Chart 1: Annual Revenue Growth (bar chart)
+  var c1 = el('div', 'chart-card');
+  c1.appendChild(el('h3', '', 'Annual Revenue (2022-2026)'));
+  var cv1 = document.createElement('canvas');
+  cv1.id = 'chartAnnual'; cv1.height = 220;
+  c1.appendChild(cv1);
+  container.appendChild(c1);
+
+  // Chart 2: Revenue by Category (stacked)
+  var c2 = el('div', 'chart-card');
+  c2.appendChild(el('h3', '', 'Revenue Mix by Year'));
+  var cv2 = document.createElement('canvas');
+  cv2.id = 'chartMix'; cv2.height = 220;
+  c2.appendChild(cv2);
+  container.appendChild(c2);
+
+  // Chart 3: 2026 Monthly Revenue (line vs 2025)
+  var c3 = el('div', 'chart-card');
+  c3.appendChild(el('h3', '', '2026 Monthly Revenue vs 2025'));
+  var cv3 = document.createElement('canvas');
+  cv3.id = 'chartMonthly'; cv3.height = 220;
+  c3.appendChild(cv3);
+  container.appendChild(c3);
+
+  // Chart 4: Revenue by Space Type (2026 donut)
+  var c4 = el('div', 'chart-card');
+  c4.appendChild(el('h3', '', '2026 YTD Revenue by Space Type'));
+  var cv4 = document.createElement('canvas');
+  cv4.id = 'chartDonut'; cv4.height = 220;
+  c4.appendChild(cv4);
+  container.appendChild(c4);
+
+  // Chart 5: 2026 Monthly Breakdown (stacked bar)
+  var c5 = el('div', 'chart-card full');
+  c5.appendChild(el('h3', '', '2026 Monthly Revenue Breakdown'));
+  var cv5 = document.createElement('canvas');
+  cv5.id = 'chartStacked'; cv5.height = 180;
+  c5.appendChild(cv5);
+  container.appendChild(c5);
+
+  // Chart 6: Profit/Loss Waterfall
+  var c6 = el('div', 'chart-card full');
+  c6.appendChild(el('h3', '', 'Monthly Profit/Loss (2026)'));
+  var cv6 = document.createElement('canvas');
+  cv6.id = 'chartPL'; cv6.height = 160;
+  c6.appendChild(cv6);
+  container.appendChild(c6);
+
+  // Draw after DOM update
+  setTimeout(drawAllCharts, 50);
+}
+
+function drawAllCharts() {
+  drawAnnualChart();
+  drawMixChart();
+  drawMonthlyChart();
+  drawDonutChart();
+  drawStackedChart();
+  drawPLChart();
+}
+
+// --- CHART DRAWING (native Canvas) ---
+var COLORS = {
+  office: '#6366f1', cubicle: '#52b788', hotdesk: '#facc15', event: '#a855f7', boardroom: '#ec4899', studio: '#06b6d4',
+  line2025: '#666', line2026: '#52b788', profit: '#52b788', loss: '#ef4444', expense: '#f59e0b'
+};
+
+function getCtx(id) {
+  var c = document.getElementById(id);
+  if (!c) return null;
+  c.width = c.parentElement.clientWidth - 32;
+  return c.getContext('2d');
+}
+
+function drawAnnualChart() {
+  var ctx = getCtx('chartAnnual'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  var data = annualRevenue;
+  var maxVal = 100000;
+  var barW = (w - 80) / data.length;
+  var chartH = h - 50;
+
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  for (var i = 0; i <= 4; i++) {
+    var y = 20 + (chartH / 4) * i;
+    ctx.strokeStyle = '#1e2132'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 10, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatMoney(maxVal - (maxVal/4)*i), 46, y + 4);
+  }
+
+  data.forEach(function(d, i) {
+    var barH = (d.total / maxVal) * chartH;
+    var x = 60 + i * barW + barW * 0.15;
+    var bw = barW * 0.7;
+    var y = 20 + chartH - barH;
+
+    var grad = ctx.createLinearGradient(x, y, x, y + barH);
+    grad.addColorStop(0, d.ytd ? '#f59e0b' : '#52b788');
+    grad.addColorStop(1, d.ytd ? '#92400e' : '#2d6a4f');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, bw, barH, 4);
+
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(formatMoney(d.total), x + bw/2, y - 6);
+
+    ctx.fillStyle = '#8b95a5'; ctx.font = '11px system-ui';
+    ctx.fillText(d.year + (d.ytd ? ' (YTD)' : ''), x + bw/2, h - 5);
+  });
+}
+
+function drawMixChart() {
+  var ctx = getCtx('chartMix'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  var maxVal = 100000;
+  var barW = (w - 80) / annualRevenue.length;
+  var chartH = h - 50;
+  var cats = ['office','cubicle','hotdesk','event','boardroom','studio'];
+  var catColors = [COLORS.office, COLORS.cubicle, COLORS.hotdesk, COLORS.event, COLORS.boardroom, COLORS.studio];
+
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  annualRevenue.forEach(function(d, i) {
+    var x = 60 + i * barW + barW * 0.1;
+    var bw = barW * 0.8;
+    var cumY = 20 + chartH;
+
+    cats.forEach(function(cat, ci) {
+      var val = d[cat] || 0;
+      var segH = (val / maxVal) * chartH;
+      if (segH < 1) return;
+      cumY -= segH;
+      ctx.fillStyle = catColors[ci];
+      ctx.fillRect(x, cumY, bw, segH);
+    });
+
+    ctx.fillStyle = '#8b95a5'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(d.year.toString(), x + bw/2, h - 5);
+  });
+
+  // Legend
+  var lx = 60;
+  ['Offices','Cubicles','Hot Desks','Events','Boardroom','Studio'].forEach(function(name, i) {
+    ctx.fillStyle = catColors[i];
+    ctx.fillRect(lx, 4, 8, 8);
+    ctx.fillStyle = '#8b95a5'; ctx.font = '9px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText(name, lx + 11, 12);
+    lx += ctx.measureText(name).width + 22;
+  });
+}
+
+function drawMonthlyChart() {
+  var ctx = getCtx('chartMonthly'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var maxVal = 10000;
+  var chartH = h - 40; var chartW = w - 70;
+
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  for (var i = 0; i <= 4; i++) {
+    var y = 15 + (chartH / 4) * i;
+    ctx.strokeStyle = '#1e2132'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 10, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+    ctx.fillText(formatMoney(maxVal - (maxVal/4)*i), 46, y + 4);
+  }
+
+  // Month labels
+  months.forEach(function(m, i) {
+    var x = 55 + (chartW / 11) * i;
+    ctx.fillStyle = '#555'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(m, x, h - 4);
+  });
+
+  // 2025 line
+  ctx.strokeStyle = COLORS.line2025; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  monthly2025.forEach(function(m, i) {
+    var x = 55 + (chartW / 11) * i;
+    var y = 15 + chartH - (m.total / maxVal) * chartH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 2026 line
+  ctx.strokeStyle = COLORS.line2026; ctx.lineWidth = 3;
+  ctx.beginPath();
+  monthly2026.forEach(function(m, i) {
+    var x = 55 + (chartW / 11) * i;
+    var y = 15 + chartH - (m.total / maxVal) * chartH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Dots for 2026
+  monthly2026.forEach(function(m, i) {
+    var x = 55 + (chartW / 11) * i;
+    var y = 15 + chartH - (m.total / maxVal) * chartH;
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.fillStyle = COLORS.line2026; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(formatMoney(m.total), x, y - 10);
+  });
+
+  // Legend
+  ctx.fillStyle = COLORS.line2026; ctx.fillRect(w - 130, 8, 14, 3);
+  ctx.fillStyle = '#8b95a5'; ctx.font = '10px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('2026', w - 112, 13);
+  ctx.strokeStyle = COLORS.line2025; ctx.setLineDash([4,4]); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(w - 70, 10); ctx.lineTo(w - 56, 10); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillText('2025', w - 52, 13);
+}
+
+function drawDonutChart() {
+  var ctx = getCtx('chartDonut'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  var d = annualRevenue[4]; // 2026
+  var segments = [
+    { label: 'Cubicles', val: d.cubicle, color: COLORS.cubicle },
+    { label: 'Offices', val: d.office, color: COLORS.office },
+    { label: 'Hot Desks', val: d.hotdesk, color: COLORS.hotdesk },
+    { label: 'Events', val: d.event, color: COLORS.event },
+    { label: 'Boardroom', val: d.boardroom, color: COLORS.boardroom },
+    { label: 'Studio', val: d.studio, color: COLORS.studio },
+  ].filter(function(s){ return s.val > 0; });
+
+  var total = segments.reduce(function(s,seg){ return s + seg.val; }, 0);
+  var cx = w * 0.4, cy = h * 0.5, r = Math.min(w*0.35, h*0.4);
+  var startAngle = -Math.PI / 2;
+
+  segments.forEach(function(seg) {
+    var sliceAngle = (seg.val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    startAngle += sliceAngle;
+  });
+
+  // Inner circle (donut hole)
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
+  ctx.fillStyle = '#0f1117'; ctx.fill();
+
+  // Center text
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(formatMoney(total), cx, cy + 2);
+  ctx.fillStyle = '#666'; ctx.font = '10px system-ui';
+  ctx.fillText('YTD Total', cx, cy + 16);
+
+  // Legend on right
+  var ly = 20;
+  segments.forEach(function(seg) {
+    ctx.fillStyle = seg.color;
+    ctx.fillRect(w * 0.72, ly, 10, 10);
+    ctx.fillStyle = '#e0e0e0'; ctx.font = '11px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText(seg.label, w * 0.72 + 14, ly + 9);
+    ctx.fillStyle = '#8b95a5'; ctx.font = '10px system-ui';
+    ctx.fillText(formatMoney(seg.val) + ' (' + Math.round(seg.val/total*100) + '%)', w * 0.72 + 14, ly + 22);
+    ly += 32;
+  });
+}
+
+function drawStackedChart() {
+  var ctx = getCtx('chartStacked'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  var maxVal = 10000;
+  var barW = (w - 80) / 4;
+  var chartH = h - 40;
+  var cats = ['office','cubicle','hotdesk','event','boardroom','studio'];
+  var catColors = [COLORS.office, COLORS.cubicle, COLORS.hotdesk, COLORS.event, COLORS.boardroom, COLORS.studio];
+
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  for (var i = 0; i <= 4; i++) {
+    var y = 10 + (chartH / 4) * i;
+    ctx.strokeStyle = '#1e2132'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 10, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+    ctx.fillText(formatMoney(maxVal - (maxVal/4)*i), 46, y + 4);
+  }
+
+  monthly2026.forEach(function(m, mi) {
+    var x = 60 + mi * barW + barW * 0.1;
+    var bw = barW * 0.8;
+    var cumY = 10 + chartH;
+
+    cats.forEach(function(cat, ci) {
+      var val = m[cat] || 0;
+      var segH = (val / maxVal) * chartH;
+      if (segH < 1) return;
+      cumY -= segH;
+      ctx.fillStyle = catColors[ci];
+      ctx.fillRect(x, cumY, bw, segH);
+    });
+
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(formatMoney(m.total), x + bw/2, cumY - 6);
+    ctx.fillStyle = '#8b95a5'; ctx.font = '11px system-ui';
+    ctx.fillText(m.month, x + bw/2, h - 4);
+  });
+
+  // Legend
+  var lx = 60;
+  ['Offices','Cubicles','Hot Desks','Events','Boardroom','Studio'].forEach(function(name, i) {
+    ctx.fillStyle = catColors[i];
+    ctx.fillRect(lx, 0, 8, 8);
+    ctx.fillStyle = '#8b95a5'; ctx.font = '9px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText(name, lx + 11, 8);
+    lx += ctx.measureText(name).width + 22;
+  });
+}
+
+function drawPLChart() {
+  var ctx = getCtx('chartPL'); if (!ctx) return;
+  var w = ctx.canvas.width, h = ctx.canvas.height;
+  var maxVal = 5000; var minVal = -5000;
+  var range = maxVal - minVal;
+  var barW = (w - 80) / 12;
+  var chartH = h - 40;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var plData = [2868, 3043, 3243, 4051, -4750, -4750, -4750, -4750, -4750, -4750, -4750, -4750]; // from spreadsheet
+
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+
+  // Zero line
+  var zeroY = 10 + (maxVal / range) * chartH;
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(50, zeroY); ctx.lineTo(w - 10, zeroY); ctx.stroke();
+  ctx.fillStyle = '#666'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+  ctx.fillText('$0', 46, zeroY + 4);
+
+  months.forEach(function(m, i) {
+    var x = 60 + i * barW + barW * 0.15;
+    var bw = barW * 0.7;
+    var val = plData[i];
+    var barH = Math.abs(val) / range * chartH;
+
+    if (val >= 0) {
+      ctx.fillStyle = COLORS.profit;
+      roundRect(ctx, x, zeroY - barH, bw, barH, 3);
+    } else {
+      ctx.fillStyle = COLORS.loss;
+      roundRect(ctx, x, zeroY, bw, barH, 3);
+    }
+
+    // Value label
+    ctx.fillStyle = val >= 0 ? '#52b788' : '#ef4444';
+    ctx.font = i < 4 ? 'bold 9px system-ui' : '9px system-ui';
+    ctx.textAlign = 'center';
+    var labelY = val >= 0 ? zeroY - barH - 4 : zeroY + barH + 10;
+    ctx.fillText((val >= 0 ? '+' : '') + formatMoney(val), x + bw/2, labelY);
+
+    // Month label
+    ctx.fillStyle = i < 4 ? '#8b95a5' : '#444';
+    ctx.font = (i < 4 ? '' : 'italic ') + '10px system-ui';
+    ctx.fillText(m, x + bw/2, h - 4);
+  });
+
+  // Annotation
+  ctx.fillStyle = '#555'; ctx.font = 'italic 9px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('Actual', 60, 8);
+  ctx.fillStyle = '#333';
+  ctx.fillText('Projected (no revenue)', 60 + 4 * barW, 8);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ============================================================
+// EMAILS PAGE
+// ============================================================
+function renderEmailsPage() {
+  var container = document.getElementById('emailsContent');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  if (!pendingChanges.length) {
+    var empty = el('div');
+    empty.style.cssText = 'text-align:center;padding:60px 20px;color:#555';
+    empty.appendChild(el('p', '', 'Move tenants between spaces on the Floor Plan tab to generate notification emails.'));
+    var hint = el('p', '', 'Double-click a tenant card or drag them to a new zone.');
+    hint.style.cssText = 'margin-top:8px;font-size:12px';
+    empty.appendChild(hint);
+    container.appendChild(empty);
+    return;
+  }
+
+  container.appendChild(el('h3', '', pendingChanges.length + ' Pending Move(s)'));
+  container.firstChild.style.cssText = 'margin-bottom:14px;font-size:15px;color:#fff';
+
+  pendingChanges.forEach(function(c) {
+    var tenant = tenants.find(function(t){ return t.id === c.tenantId; });
+    var email = generateEmail(c, tenant);
+    var preview = el('div', 'email-preview');
+    preview.appendChild(el('h4', '', 'Notification: ' + tenant.name));
+    preview.appendChild(el('div', 'email-to', 'To: ' + (tenant.email || '(no email on file - check CurrentPast Tenants sheet)')));
+    preview.appendChild(el('div', 'email-subject', 'Subject: ' + email.subject));
+    preview.appendChild(el('div', 'email-body', email.body));
+    container.appendChild(preview);
+  });
+
+  var acts = el('div', 'actions');
+  var copyBtn = el('button', 'btn btn-primary', 'Copy All Emails');
+  copyBtn.addEventListener('click', copyAllEmails);
+  acts.appendChild(copyBtn);
+  var dlBtn = el('button', 'btn btn-outline', 'Download as Text');
+  dlBtn.addEventListener('click', downloadEmails);
+  acts.appendChild(dlBtn);
+  container.appendChild(acts);
+}
+
+function generateEmail(change, tenant) {
+  var oldLabel = change.oldType === 'smalloffice' ? 'Small Office' : (RATES[change.oldType] ? RATES[change.oldType].label : change.oldType);
+  var newLabel = RATES[change.newType] ? RATES[change.newType].label : change.newType;
+  var isUpgrade = getRateOrder(change.newType) < getRateOrder(change.oldType);
+  var firstName = tenant.name.split(' ')[0];
+
+  var rateNote = tenant.rate > change.oldRate
+    ? 'Your new monthly rate will be $' + tenant.rate + ', reflecting the ' + newLabel + ' rate.'
+    : 'Your new monthly rate will be $' + tenant.rate + ', a saving of $' + (change.oldRate - tenant.rate) + '/month.';
+
+  var closing = isUpgrade
+    ? "We're excited for you to enjoy your upgraded space!"
+    : "We're happy to accommodate this change and look forward to continuing to support your work.";
+
+  return {
+    subject: 'Co-Lab Space Update: Your ' + (isUpgrade ? 'Upgrade' : 'Change') + ' to ' + newLabel,
+    body: 'Dear ' + firstName + ',\n\nWe hope you\'re enjoying your time at Co-Lab! This email confirms your upcoming space change:\n\nCurrent space: ' + oldLabel + ' ($' + change.oldRate + '/month)\nNew space: ' + newLabel + ' ($' + tenant.rate + '/month)\nEffective date: ' + formatDate(change.effectiveDate) + '\n\n' + rateNote + '\n\n' + closing + '\n\nPlease let us know if you have any questions.\n\nWarm regards,\nCo-Lab Team\nIgnite Bermuda'
+  };
+}
+
+function getRateOrder(type) {
+  return { office: 0, smalloffice: 0, cubicle: 1, hotdesk: 2 }[type] || 1;
+}
+
+// ============================================================
+// DRAG & DROP
+// ============================================================
+function onDragStart(e) {
+  draggedTenantId = parseInt(e.target.dataset.tenantId || e.target.closest('.desk-card').dataset.tenantId);
+  e.target.closest('.desk-card').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(e) {
+  var card = e.target.closest('.desk-card');
+  if (card) card.classList.remove('dragging');
+  document.querySelectorAll('.zone-body').forEach(function(z){ z.classList.remove('drag-over'); });
+}
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  var newZone = e.currentTarget.dataset.zone;
+  if (draggedTenantId !== null) {
+    var tenant = tenants.find(function(t){ return t.id === draggedTenantId; });
+    if (tenant && tenant.displayZone !== newZone) {
+      movingTenantId = draggedTenantId;
+      openMoveModalForZone(newZone);
+    }
+  }
+  draggedTenantId = null;
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openMoveModal(tenantId) {
+  movingTenantId = tenantId;
+  var tenant = tenants.find(function(t){ return t.id === tenantId; });
+  var typeLabel = tenant.type === 'smalloffice' ? 'Small Office' : (RATES[tenant.type] ? RATES[tenant.type].label : tenant.type);
+  document.getElementById('modalTitle').textContent = 'Move Tenant';
+  document.getElementById('modalTenantName').textContent = tenant.name;
+  document.getElementById('modalCurrentSpace').textContent = typeLabel + ' - ' + formatMoney(tenant.rate) + '/mo';
+  document.getElementById('newSpace').value = tenant.displayZone === 'office' ? 'cubicle' : tenant.displayZone === 'cubicle' ? 'office' : 'cubicle';
+  updateModalRate();
+  document.getElementById('moveModal').classList.add('show');
+}
+
+function openMoveModalForZone(zone) {
+  var tenant = tenants.find(function(t){ return t.id === movingTenantId; });
+  var typeLabel = tenant.type === 'smalloffice' ? 'Small Office' : (RATES[tenant.type] ? RATES[tenant.type].label : tenant.type);
+  document.getElementById('modalTitle').textContent = 'Confirm Move';
+  document.getElementById('modalTenantName').textContent = tenant.name;
+  document.getElementById('modalCurrentSpace').textContent = typeLabel + ' - ' + formatMoney(tenant.rate) + '/mo';
+  document.getElementById('newSpace').value = zone;
+  updateModalRate();
+  document.getElementById('moveModal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('moveModal').classList.remove('show'); movingTenantId = null; }
+
+function updateModalRate() {
+  var zone = document.getElementById('newSpace').value;
+  document.getElementById('newRate').value = zone === 'office' ? 750 : zone === 'hotdesk' ? 250 : 350;
+}
+document.getElementById('newSpace').addEventListener('change', updateModalRate);
+
+function confirmMove() {
+  var tenant = tenants.find(function(t){ return t.id === movingTenantId; });
+  var newType = document.getElementById('newSpace').value;
+  var newRate = parseInt(document.getElementById('newRate').value);
+  var effectiveDate = document.getElementById('effectiveDate').value;
+
+  pendingChanges = pendingChanges.filter(function(c){ return c.tenantId !== tenant.id; });
+  var orig = originalTenants.find(function(t){ return t.id === tenant.id; });
+
+  pendingChanges.push({
+    tenantId: tenant.id,
+    oldType: orig.type,
+    oldRate: orig.rate,
+    newType: newType,
+    newRate: newRate,
+    effectiveDate: effectiveDate
+  });
+
+  tenant.type = newType;
+  tenant.displayZone = newType;
+  tenant.rate = newRate;
+
+  closeModal();
+  render();
+  showToast(tenant.name + ' moved to ' + (RATES[newType] ? RATES[newType].label : newType) + ' at ' + formatMoney(newRate) + '/mo');
+}
+
+// ============================================================
+// CHANGES / EXPORTS
+// ============================================================
+function renderChangesBanner() {
+  var banner = document.getElementById('changesBanner');
+  if (pendingChanges.length) {
+    banner.classList.add('show');
+    document.getElementById('changesText').textContent = pendingChanges.map(function(c) {
+      var t = tenants.find(function(x){ return x.id === c.tenantId; });
+      var oldLabel = c.oldType === 'smalloffice' ? 'Small Office' : (RATES[c.oldType] ? RATES[c.oldType].label : c.oldType);
+      var newLabel = RATES[c.newType] ? RATES[c.newType].label : c.newType;
+      return t.name + ': ' + oldLabel + ' -> ' + newLabel;
+    }).join('; ');
+  } else { banner.classList.remove('show'); }
+}
+
+function resetChanges() {
+  tenants = JSON.parse(JSON.stringify(originalTenants));
+  pendingChanges = [];
+  render();
+  showToast('All changes reverted');
+}
+
+function copyAllEmails() {
+  var texts = pendingChanges.map(function(c) {
+    var tenant = tenants.find(function(t){ return t.id === c.tenantId; });
+    var email = generateEmail(c, tenant);
+    return 'TO: ' + (tenant.email || '(no email)') + '\nSUBJECT: ' + email.subject + '\n\n' + email.body;
+  }).join('\n\n---\n\n');
+  navigator.clipboard.writeText(texts);
+  showToast('Emails copied to clipboard');
+}
+
+function downloadEmails() {
+  var texts = pendingChanges.map(function(c) {
+    var tenant = tenants.find(function(t){ return t.id === c.tenantId; });
+    var email = generateEmail(c, tenant);
+    return 'TO: ' + (tenant.email || '(no email)') + '\nSUBJECT: ' + email.subject + '\n\n' + email.body;
+  }).join('\n\n========================================\n\n');
+  downloadFile('colab-move-emails.txt', texts);
+}
+
+function downloadSchedule() {
+  var sorted = tenants.slice().sort(function(a,b){ var o={office:0,smalloffice:0,cubicle:1,hotdesk:2}; return (o[a.type]||0)-(o[b.type]||0)||b.rate-a.rate; });
+  var csv = 'Tenant,Space Type,Monthly Rate,Tag,Year,Start Date,End Date,Status,Notes\n';
+  sorted.forEach(function(t) {
+    var typeLabel = t.type === 'smalloffice' ? 'Small Office' : (RATES[t.type] ? RATES[t.type].label : t.type);
+    var changed = pendingChanges.find(function(c){ return c.tenantId === t.id; });
+    csv += '"' + t.name + '","' + typeLabel + '",' + t.rate + ',' + (t.tag==='A'?'Annual':'External') + ',' + (t.year||'-') + ',"' + (t.start||'') + '","' + (t.end||'') + '",' + t.status + ',"' + (changed ? 'MOVED from ' + (RATES[changed.oldType]||{label:changed.oldType}).label : t.notes) + '"\n';
+  });
+  var total = tenants.filter(function(t){return t.status!=='upcoming';}).reduce(function(s,t){return s+t.rate;},0);
+  csv += '\n"Active Monthly Total",,' + total + ',,,,,,\n"Annual Projection",,' + (total*12) + ',,,,,,';
+  downloadFile('colab-rent-schedule.csv', csv);
+  showToast('Schedule downloaded');
+}
+
+function downloadFile(filename, content) {
+  var a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  a.download = filename;
+  a.click();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function render() {
+  renderFloorPlan();
+  updateStats();
+  renderChangesBanner();
+  // Re-render active page
+  var activePage = document.querySelector('.nav-tab.active').dataset.page;
+  if (activePage === 'schedule') renderSchedulePage();
+  if (activePage === 'emails') renderEmailsPage();
+}
+
+render();
+</script>
+</body>
+</html>
