@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Arena — Blind Multi-Model Comparison</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #141c2e;
+      --surface-hover: #1a2540;
+      --border: #1e2d4a;
+      --border-hover: #2e4a7a;
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --text-muted: #475569;
+      --accent: #0ea5e9;
+      --green: #10b981;
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --teal: #14b8a6;
+      --orange: #f97316;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+    /* Header */
+    .header { padding: 36px 24px 20px; text-align: center; position: relative; overflow: hidden; }
+    .header::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.10) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .backlink {
+      position: absolute; top: 18px; left: 18px; font-size: 12px; color: var(--text-dim);
+      z-index: 2;
+    }
+    .logo {
+      font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--purple); margin-bottom: 10px;
+    }
+    h1 { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: var(--text-dim); max-width: 520px; margin: 0 auto; }
+
+    /* Panels */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px 20px; margin-top: 16px;
+    }
+    .panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .panel-title {
+      font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-dim); display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title .num {
+      width: 20px; height: 20px; border-radius: 50%; background: rgba(139,92,246,0.15);
+      color: var(--purple); font-size: 11px; display: inline-flex; align-items: center;
+      justify-content: center; font-weight: 800;
+    }
+    .chev { color: var(--text-muted); font-size: 12px; transition: transform 0.2s; }
+    .panel.collapsed .chev { transform: rotate(-90deg); }
+    .panel.collapsed .panel-body { display: none; }
+    .panel-body { margin-top: 16px; }
+    .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+
+    /* Form bits */
+    label.fld { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    input[type=text], input[type=password], textarea, select {
+      width: 100%; background: #0e1626; border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); padding: 10px 12px; font-size: 13px; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
+    select { cursor: pointer; }
+
+    .key-row { margin-bottom: 14px; }
+    .key-label-line { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .key-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+    .key-dot.ok { background: var(--green); }
+    .key-label-line label.fld { margin-bottom: 0; }
+    .key-label-line .prov-link { font-size: 10px; color: var(--text-muted); margin-left: auto; }
+
+    /* Model rows */
+    .model-row {
+      display: grid; grid-template-columns: 26px 120px 1fr 28px; gap: 8px; align-items: center;
+      margin-bottom: 8px;
+    }
+    .model-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--purple); cursor: pointer; }
+    .model-row select, .model-row input[type=text] { padding: 7px 9px; font-size: 12px; }
+    .icon-btn {
+      background: none; border: 1px solid var(--border); border-radius: 7px; color: var(--text-muted);
+      cursor: pointer; height: 30px; font-size: 14px; transition: all 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--rose); color: var(--rose); }
+    .add-btn {
+      margin-top: 4px; background: none; border: 1px dashed var(--border); border-radius: 8px;
+      color: var(--text-dim); cursor: pointer; padding: 7px 12px; font-size: 12px; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .add-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } .model-row { grid-template-columns: 26px 1fr 28px; } .model-row select { grid-column: span 1; } }
+
+    /* Run button */
+    .run-bar { display: flex; gap: 12px; align-items: center; margin-top: 18px; }
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border: none;
+      border-radius: 10px; padding: 13px 28px; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(139,92,246,0.35); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-ghost {
+      background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 10px;
+      padding: 13px 18px; font-size: 13px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+    .run-status { font-size: 12px; color: var(--text-dim); }
+
+    /* Progress chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px; font-size: 12px; padding: 6px 11px;
+      border-radius: 20px; border: 1px solid var(--border); background: #0e1626; color: var(--text-dim);
+    }
+    .chip .spin { width: 11px; height: 11px; border: 2px solid var(--border-hover); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .chip.done { color: var(--green); border-color: rgba(16,185,129,0.3); }
+    .chip.err { color: var(--rose); border-color: rgba(244,63,94,0.3); }
+    .chip .tick { font-weight: 800; }
+
+    /* Results */
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-muted); margin: 28px 0 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .lb-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 10px; position: relative; overflow: hidden;
+    }
+    .lb-card.win { border-color: rgba(245,158,11,0.4); background: linear-gradient(135deg, rgba(245,158,11,0.07), var(--surface)); }
+    .lb-top { display: flex; align-items: center; gap: 12px; }
+    .lb-rank { font-size: 20px; font-weight: 800; color: var(--text-muted); min-width: 30px; }
+    .lb-card.win .lb-rank { color: var(--amber); }
+    .lb-name { flex: 1; }
+    .lb-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .lb-model { font-size: 15px; font-weight: 700; color: #fff; }
+    .lb-model .prov { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-left: 6px;
+      padding: 2px 7px; border-radius: 5px; background: rgba(100,116,139,0.15); text-transform: uppercase; letter-spacing: 0.5px; }
+    .lb-score { text-align: right; }
+    .lb-total { font-size: 22px; font-weight: 800; color: #fff; }
+    .lb-total small { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .lb-bars { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+    .lb-metric { flex: 1; min-width: 120px; }
+    .lb-metric .mlabel { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+      display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .lb-metric .mlabel b { color: var(--text); }
+    .bar-track { height: 6px; background: #0e1626; border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+    .bar-useful { background: var(--accent); }
+    .bar-accurate { background: var(--green); }
+    .bar-actionable { background: var(--purple); }
+
+    details.detail { margin-top: 10px; }
+    details.detail summary {
+      cursor: pointer; font-size: 12px; color: var(--text-dim); list-style: none; user-select: none;
+      padding: 4px 0;
+    }
+    details.detail summary::-webkit-details-marker { display: none; }
+    details.detail summary::before { content: '▸ '; color: var(--text-muted); }
+    details.detail[open] summary::before { content: '▾ '; }
+    .answer-text {
+      white-space: pre-wrap; font-size: 13px; color: var(--text); background: #0e1626;
+      border: 1px solid var(--border); border-radius: 9px; padding: 12px 14px; margin-top: 8px;
+      max-height: 320px; overflow-y: auto; line-height: 1.55;
+    }
+    .judge-note { font-size: 12px; color: var(--text-dim); margin-top: 6px; padding-left: 4px; }
+    .judge-note b { color: var(--text); }
+
+    table.votes { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    table.votes th, table.votes td { text-align: center; padding: 7px 6px; border-bottom: 1px solid var(--border); }
+    table.votes th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+    table.votes td.jname { text-align: left; color: var(--text-dim); }
+    table.votes td b { color: #fff; }
+
+    .err-box { background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.3); border-radius: 9px;
+      padding: 10px 14px; font-size: 12px; color: #fda4af; margin-top: 10px; }
+    .footer { text-align: center; padding: 30px 0 0; font-size: 11px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <a class="backlink" href="../">&larr; Hub</a>
+    <div class="logo">Model Arena</div>
+    <h1>Blind Multi-Model Comparison</h1>
+    <p class="subtitle">Run one prompt through several AI models, then let a panel of judges score the answers
+      blind — without knowing which model wrote which — on Useful, Accurate &amp; Actionable.</p>
+  </div>
+
+  <div class="container">
+
+    <!-- 1. API Keys -->
+    <div class="panel" id="panel-keys">
+      <div class="panel-head" onclick="togglePanel('panel-keys')">
+        <span class="panel-title"><span class="num">1</span> API Keys</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="panel-body">
+        <div class="key-row">
+          <div class="key-label-line">
+            <span class="key-dot" id="dot-anthropic"></span>
+            <label class="fld">Anthropic (Claude)</label>
+            <a class="prov-link" href="https://console.anthropic.com/settings/keys" target="_blank">get key &rarr;</a>
+          </div>
+          <input type="password" id="key-anthropic" placeholder="sk-ant-..." autocomplete="off">
+        </div>
+        <div class="key-row">
+          <div class="key-label-line">
+            <span class="key-dot" id="dot-openai"></span>
+            <label class="fld">OpenAI (GPT)</label>
+            <a class="prov-link" href="https://platform.openai.com/api-keys" target="_blank">get key &rarr;</a>
+          </div>
+          <input type="password" id="key-openai" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="key-row">
+          <div class="key-label-line">
+            <span class="key-dot" id="dot-google"></span>
+            <label class="fld">Google (Gemini)</label>
+            <a class="prov-link" href="https://aistudio.google.com/app/apikey" target="_blank">get key &rarr;</a>
+          </div>
+          <input type="password" id="key-google" placeholder="AIza..." autocomplete="off">
+        </div>
+        <p class="hint">🔒 Keys are stored only in this browser's <code>localStorage</code> and sent directly from your
+          browser to each provider. They never touch any server of ours. You only need keys for the providers you
+          want to use.</p>
+      </div>
+    </div>
+
+    <!-- 2. Contestants -->
+    <div class="panel" id="panel-contestants">
+      <div class="panel-head" onclick="togglePanel('panel-contestants')">
+        <span class="panel-title"><span class="num">2</span> Contestant Models</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="panel-body">
+        <div id="contestant-list"></div>
+        <button class="add-btn" onclick="addModelRow('contestant')">+ Add contestant</button>
+        <p class="hint">The prompt is sent to every <b>enabled</b> contestant. Edit the model ID to match exactly what
+          the provider expects (model names change over time).</p>
+      </div>
+    </div>
+
+    <!-- 3. Judge panel -->
+    <div class="panel" id="panel-judges">
+      <div class="panel-head" onclick="togglePanel('panel-judges')">
+        <span class="panel-title"><span class="num">3</span> Judge Panel</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="panel-body">
+        <div id="judge-list"></div>
+        <button class="add-btn" onclick="addModelRow('judge')">+ Add judge</button>
+        <p class="hint">Each enabled judge independently scores every answer blind. Use several judges (ideally from
+          different providers) for a fairer vote. Answers are anonymised as <b>Answer A / B / C…</b> and shuffled
+          per judge to reduce position bias.</p>
+      </div>
+    </div>
+
+    <!-- 4. Prompt -->
+    <div class="panel" id="panel-prompt">
+      <div class="panel-head" onclick="togglePanel('panel-prompt')">
+        <span class="panel-title"><span class="num">4</span> Prompt</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="panel-body">
+        <textarea id="prompt" placeholder="e.g. Draft a 5-step plan to validate a new B2B SaaS idea in 30 days on a £2k budget."></textarea>
+        <div class="run-bar">
+          <button class="btn-primary" id="run-btn" onclick="runArena()">⚔ Run Arena</button>
+          <button class="btn-ghost" onclick="resetSettings()" title="Clear saved keys & models">Reset</button>
+          <span class="run-status" id="run-status"></span>
+        </div>
+        <div class="chips" id="progress-chips"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+    <div class="footer">Model Arena · client-side only · part of the Sean Reel Dashboard Hub</div>
+  </div>
+
+  <script>
+    // ---------- Provider adapters (direct browser calls) ----------
+    const PROVIDERS = {
+      anthropic: {
+        label: 'Claude',
+        async call(model, key, system, user, maxTokens) {
+          const r = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model, max_tokens: maxTokens,
+              system,
+              messages: [{ role: 'user', content: user }]
+            })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data?.error?.message || ('HTTP ' + r.status));
+          const block = (data.content || []).find(b => b.type === 'text');
+          return (block?.text || '').trim();
+        }
+      },
+      openai: {
+        label: 'GPT',
+        async call(model, key, system, user, maxTokens) {
+          const r = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+              max_completion_tokens: maxTokens
+            })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data?.error?.message || ('HTTP ' + r.status));
+          return (data.choices?.[0]?.message?.content || '').trim();
+        }
+      },
+      google: {
+        label: 'Gemini',
+        async call(model, key, system, user, maxTokens) {
+          const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+            encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: [{ role: 'user', parts: [{ text: user }] }],
+              generationConfig: { maxOutputTokens: maxTokens }
+            })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data?.error?.message || ('HTTP ' + r.status));
+          const parts = data.candidates?.[0]?.content?.parts || [];
+          return parts.map(p => p.text || '').join('').trim();
+        }
+      }
+    };
+
+    // ---------- Defaults ----------
+    const DEFAULT_CONTESTANTS = [
+      { on: true,  provider: 'anthropic', model: 'claude-opus-4-8' },
+      { on: true,  provider: 'openai',    model: 'gpt-4o' },
+      { on: true,  provider: 'google',    model: 'gemini-2.0-flash' },
+      { on: false, provider: 'anthropic', model: 'claude-sonnet-4-6' }
+    ];
+    const DEFAULT_JUDGES = [
+      { on: true,  provider: 'anthropic', model: 'claude-opus-4-8' },
+      { on: true,  provider: 'openai',    model: 'gpt-4o' },
+      { on: true,  provider: 'google',    model: 'gemini-2.0-flash' }
+    ];
+
+    // ---------- State + persistence ----------
+    const LS = 'modelArena.v1';
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const s = JSON.parse(localStorage.getItem(LS));
+        if (s && s.contestants && s.judges) return s;
+      } catch (e) {}
+      return {
+        keys: { anthropic: '', openai: '', google: '' },
+        contestants: structuredClone(DEFAULT_CONTESTANTS),
+        judges: structuredClone(DEFAULT_JUDGES),
+        prompt: ''
+      };
+    }
+    function saveState() { localStorage.setItem(LS, JSON.stringify(state)); }
+
+    // ---------- Render config UI ----------
+    function renderKeys() {
+      ['anthropic', 'openai', 'google'].forEach(p => {
+        const input = document.getElementById('key-' + p);
+        input.value = state.keys[p] || '';
+        document.getElementById('dot-' + p).classList.toggle('ok', !!state.keys[p]);
+        input.oninput = () => {
+          state.keys[p] = input.value.trim();
+          document.getElementById('dot-' + p).classList.toggle('ok', !!state.keys[p]);
+          saveState();
+        };
+      });
+    }
+
+    function provOptions(selected) {
+      return Object.entries(PROVIDERS).map(([k, v]) =>
+        `<option value="${k}" ${k === selected ? 'selected' : ''}>${v.label}</option>`).join('');
+    }
+
+    function renderModelList(kind) {
+      const arr = kind === 'contestant' ? state.contestants : state.judges;
+      const el = document.getElementById(kind === 'contestant' ? 'contestant-list' : 'judge-list');
+      el.innerHTML = '';
+      arr.forEach((row, i) => {
+        const div = document.createElement('div');
+        div.className = 'model-row';
+        div.innerHTML = `
+          <input type="checkbox" ${row.on ? 'checked' : ''}>
+          <select>${provOptions(row.provider)}</select>
+          <input type="text" value="${row.model.replace(/"/g, '&quot;')}" placeholder="model-id">
+          <button class="icon-btn" title="Remove">✕</button>`;
+        const [cb, sel, txt, rm] = div.children;
+        cb.onchange = () => { row.on = cb.checked; saveState(); };
+        sel.onchange = () => { row.provider = sel.value; saveState(); };
+        txt.oninput = () => { row.model = txt.value.trim(); saveState(); };
+        rm.onclick = () => { arr.splice(i, 1); saveState(); renderModelList(kind); };
+        el.appendChild(div);
+      });
+    }
+
+    function addModelRow(kind) {
+      const arr = kind === 'contestant' ? state.contestants : state.judges;
+      arr.push({ on: true, provider: 'anthropic', model: '' });
+      saveState(); renderModelList(kind);
+    }
+
+    function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+    function resetSettings() {
+      if (!confirm('Clear saved keys, models and prompt from this browser?')) return;
+      localStorage.removeItem(LS);
+      state = loadState();
+      renderAll();
+    }
+
+    function renderAll() {
+      renderKeys();
+      renderModelList('contestant');
+      renderModelList('judge');
+      document.getElementById('prompt').value = state.prompt || '';
+    }
+
+    document.getElementById('prompt').addEventListener('input', e => { state.prompt = e.target.value; saveState(); });
+
+    // ---------- Helpers ----------
+    function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+    function labelFor(i) { return String.fromCharCode(65 + i); } // A, B, C…
+    function clamp(n) { n = Number(n); if (isNaN(n)) return 0; return Math.max(0, Math.min(10, n)); }
+    function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    // Light scrub of obvious self-identification so judges stay blind.
+    function scrub(text) {
+      return text
+        .replace(/\b(I am|I'm)\s+(Claude|ChatGPT|GPT-?\d?[\w.\-]*|Gemini|Bard|an AI (model|assistant) (made|created|developed|built|trained) by[^.]*)/gi, 'I am an assistant')
+        .replace(/\b(as|being)\s+(an?\s+)?(Claude|ChatGPT|Gemini|large language model)[^.,;\n]*/gi, 'as an assistant')
+        .replace(/\b(Anthropic|OpenAI|Google DeepMind|Google AI)\b/gi, 'my provider');
+    }
+
+    function extractJSON(text) {
+      // strip code fences and grab the first balanced object
+      const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      const body = fenced ? fenced[1] : text;
+      const start = body.indexOf('{');
+      if (start === -1) throw new Error('no JSON found');
+      let depth = 0, inStr = false, escd = false;
+      for (let i = start; i < body.length; i++) {
+        const c = body[i];
+        if (inStr) { if (escd) escd = false; else if (c === '\\') escd = true; else if (c === '"') inStr = false; }
+        else if (c === '"') inStr = true;
+        else if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) return JSON.parse(body.slice(start, i + 1)); }
+      }
+      throw new Error('unbalanced JSON');
+    }
+
+    // ---------- Progress UI ----------
+    function setChips(items) {
+      document.getElementById('progress-chips').innerHTML = items.map(it => {
+        const cls = it.status === 'done' ? 'done' : it.status === 'err' ? 'err' : '';
+        const mark = it.status === 'done' ? '<span class="tick">✓</span>'
+          : it.status === 'err' ? '<span class="tick">✕</span>'
+          : '<span class="spin"></span>';
+        return `<span class="chip ${cls}">${mark} ${esc(it.text)}</span>`;
+      }).join('');
+    }
+
+    // ---------- Main run ----------
+    const CONTESTANT_SYSTEM = 'You are a knowledgeable, helpful assistant. Answer the user\'s request directly, ' +
+      'clearly and concisely. Do not mention which AI model or company you are.';
+
+    async function runArena() {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) { alert('Enter a prompt first.'); return; }
+
+      const contestants = state.contestants.filter(c => c.on && c.model && state.keys[c.provider]);
+      const judges = state.judges.filter(j => j.on && j.model && state.keys[j.provider]);
+
+      const missingC = state.contestants.filter(c => c.on && c.model && !state.keys[c.provider]);
+      if (missingC.length) {
+        const provs = [...new Set(missingC.map(c => PROVIDERS[c.provider].label))].join(', ');
+        if (!confirm('Missing API key for: ' + provs + '. Those contestants will be skipped. Continue?')) return;
+      }
+      if (contestants.length < 2) { alert('Enable at least 2 contestants with valid keys.'); return; }
+      if (judges.length < 1) { alert('Enable at least 1 judge with a valid key.'); return; }
+
+      const runBtn = document.getElementById('run-btn');
+      runBtn.disabled = true;
+      document.getElementById('run-status').textContent = 'Querying contestants…';
+      document.getElementById('results').innerHTML = '';
+
+      // --- Stage 1: query contestants in parallel ---
+      const progress = contestants.map(c => ({ text: PROVIDERS[c.provider].label + ' · ' + c.model, status: 'run' }));
+      setChips(progress);
+
+      const answers = await Promise.all(contestants.map(async (c, i) => {
+        try {
+          const text = await PROVIDERS[c.provider].call(c.model, state.keys[c.provider], CONTESTANT_SYSTEM, prompt, 2048);
+          if (!text) throw new Error('empty response');
+          progress[i].status = 'done'; setChips(progress);
+          return { provider: c.provider, model: c.model, text, ok: true };
+        } catch (e) {
+          progress[i].status = 'err'; progress[i].text += ' — ' + e.message; setChips(progress);
+          return { provider: c.provider, model: c.model, error: e.message, ok: false };
+        }
+      }));
+
+      const good = answers.filter(a => a.ok);
+      if (good.length < 2) {
+        document.getElementById('run-status').textContent = '';
+        document.getElementById('results').innerHTML =
+          '<div class="err-box">Need at least 2 successful answers to judge. ' +
+          esc(answers.filter(a => !a.ok).map(a => PROVIDERS[a.provider].label + ': ' + a.error).join(' · ')) + '</div>';
+        runBtn.disabled = false;
+        return;
+      }
+
+      // --- Anonymise: stable random label assignment ---
+      const shuffled = shuffle(good);
+      shuffled.forEach((a, i) => { a.label = labelFor(i); a.scrubbed = scrub(a.text); });
+      const byLabel = {};
+      shuffled.forEach(a => byLabel[a.label] = a);
+      const labels = shuffled.map(a => a.label);
+
+      // --- Stage 2: judges score blind ---
+      document.getElementById('run-status').textContent = 'Judges deliberating…';
+      const jprog = judges.map(j => ({ text: '⚖ ' + PROVIDERS[j.provider].label + ' · ' + j.model, status: 'run' }));
+      setChips(progress.concat(jprog));
+
+      const verdicts = await Promise.all(judges.map(async (j, i) => {
+        try {
+          // per-judge shuffle of presentation order to cut position bias
+          const order = shuffle(shuffled);
+          const block = order.map(a => `=== Answer ${a.label} ===\n${a.scrubbed}`).join('\n\n');
+          const sys = 'You are an impartial, rigorous evaluator. You will see a user prompt and several anonymised ' +
+            'answers, each labelled with a letter. Judge ONLY the content. Ignore any hint about which AI or company ' +
+            'produced an answer. Score each answer from 1 to 10 on three criteria:\n' +
+            '• useful — does it genuinely help with the request?\n' +
+            '• accurate — is it correct and free of errors/hallucination?\n' +
+            '• actionable — can the reader act on it concretely?\n' +
+            'Respond with ONLY valid JSON, no prose, in this exact shape:\n' +
+            '{"scores":{"' + labels[0] + '":{"useful":7,"accurate":8,"actionable":6,"comment":"one short sentence"}, ...}}\n' +
+            'Include every answer label.';
+          const usr = 'USER PROMPT:\n' + prompt + '\n\nANSWERS TO JUDGE:\n\n' + block;
+          const raw = await PROVIDERS[j.provider].call(j.model, state.keys[j.provider], sys, usr, 1500);
+          const parsed = extractJSON(raw);
+          const scores = {};
+          labels.forEach(L => {
+            const s = parsed.scores?.[L] || {};
+            scores[L] = {
+              useful: clamp(s.useful), accurate: clamp(s.accurate), actionable: clamp(s.actionable),
+              comment: (s.comment || '').toString().slice(0, 240)
+            };
+          });
+          jprog[i].status = 'done'; setChips(progress.concat(jprog));
+          return { judge: j, scores, ok: true };
+        } catch (e) {
+          jprog[i].status = 'err'; jprog[i].text += ' — ' + e.message; setChips(progress.concat(jprog));
+          return { judge: j, error: e.message, ok: false };
+        }
+      }));
+
+      const goodVerdicts = verdicts.filter(v => v.ok);
+      document.getElementById('run-status').textContent = '';
+      runBtn.disabled = false;
+
+      if (!goodVerdicts.length) {
+        document.getElementById('results').innerHTML =
+          '<div class="err-box">No judge returned a valid scorecard. ' +
+          esc(verdicts.map(v => PROVIDERS[v.judge.provider].label + ': ' + v.error).join(' · ')) + '</div>';
+        return;
+      }
+
+      renderResults({ shuffled, byLabel, labels, verdicts: goodVerdicts, allAnswers: answers, prompt });
+    }
+
+    // ---------- Results rendering ----------
+    function renderResults({ shuffled, byLabel, labels, verdicts, allAnswers, prompt }) {
+      const CRIT = ['useful', 'accurate', 'actionable'];
+      // aggregate per label
+      const agg = {};
+      labels.forEach(L => {
+        const per = { useful: 0, accurate: 0, actionable: 0 };
+        verdicts.forEach(v => CRIT.forEach(c => per[c] += v.scores[L][c]));
+        CRIT.forEach(c => per[c] = per[c] / verdicts.length);
+        per.overall = (per.useful + per.accurate + per.actionable) / 3;
+        agg[L] = per;
+      });
+      const ranked = labels.slice().sort((a, b) => agg[b].overall - agg[a].overall);
+
+      let html = `<div class="section-label">Leaderboard · ${verdicts.length} judge${verdicts.length > 1 ? 's' : ''}</div>`;
+
+      ranked.forEach((L, idx) => {
+        const a = byLabel[L], s = agg[L];
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
+        const metric = (name, cls, val) => `
+          <div class="lb-metric">
+            <div class="mlabel"><span>${name}</span><b>${val.toFixed(1)}</b></div>
+            <div class="bar-track"><div class="bar-fill ${cls}" style="width:${val * 10}%"></div></div>
+          </div>`;
+        html += `
+          <div class="lb-card ${idx === 0 ? 'win' : ''}">
+            <div class="lb-top">
+              <div class="lb-rank">${medal}</div>
+              <div class="lb-name">
+                <div class="lb-label">Answer ${L}</div>
+                <div class="lb-model">${esc(a.model)}<span class="prov">${PROVIDERS[a.provider].label}</span></div>
+              </div>
+              <div class="lb-score"><div class="lb-total">${s.overall.toFixed(1)}<small>/10</small></div></div>
+            </div>
+            <div class="lb-bars">
+              ${metric('Useful', 'bar-useful', s.useful)}
+              ${metric('Accurate', 'bar-accurate', s.accurate)}
+              ${metric('Actionable', 'bar-actionable', s.actionable)}
+            </div>
+            <details class="detail"><summary>Read answer ${L}</summary>
+              <div class="answer-text">${esc(a.text)}</div></details>
+            <details class="detail"><summary>Judge comments</summary>
+              ${verdicts.map(v => {
+                const sc = v.scores[L];
+                return `<div class="judge-note"><b>${PROVIDERS[v.judge.provider].label} · ${esc(v.judge.model)}:</b>
+                  U${sc.useful} A${sc.accurate} Ac${sc.actionable} — ${esc(sc.comment || '—')}</div>`;
+              }).join('')}
+            </details>
+          </div>`;
+      });
+
+      // Scorecard matrix
+      html += `<div class="section-label">Scorecard (overall /10 per judge)</div>`;
+      html += `<div class="panel"><table class="votes"><thead><tr><th>Judge</th>` +
+        ranked.map(L => `<th>Ans ${L}</th>`).join('') + `</tr></thead><tbody>`;
+      verdicts.forEach(v => {
+        html += `<tr><td class="jname">${PROVIDERS[v.judge.provider].label} · ${esc(v.judge.model)}</td>` +
+          ranked.map(L => {
+            const sc = v.scores[L];
+            const o = ((sc.useful + sc.accurate + sc.actionable) / 3);
+            return `<td>${o.toFixed(1)}</td>`;
+          }).join('') + `</tr>`;
+      });
+      html += `<tr><td class="jname"><b>Average</b></td>` +
+        ranked.map(L => `<td><b>${agg[L].overall.toFixed(1)}</b></td>`).join('') + `</tr>`;
+      html += `</tbody></table></div>`;
+
+      // Reveal
+      html += `<div class="section-label">Reveal · who was who</div><div class="panel"><table class="votes"><thead>` +
+        `<tr><th>Label</th><th>Provider</th><th>Model</th><th>Rank</th></tr></thead><tbody>`;
+      labels.forEach(L => {
+        const a = byLabel[L];
+        html += `<tr><td><b>${L}</b></td><td>${PROVIDERS[a.provider].label}</td><td class="jname">${esc(a.model)}</td>` +
+          `<td>#${ranked.indexOf(L) + 1}</td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+
+      // Failed contestants
+      const failed = allAnswers.filter(a => !a.ok);
+      if (failed.length) {
+        html += `<div class="err-box">⚠ Skipped (errored): ` +
+          esc(failed.map(a => PROVIDERS[a.provider].label + ' ' + a.model + ' — ' + a.error).join(' · ')) + `</div>`;
+      }
+
+      document.getElementById('results').innerHTML = html;
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ---------- init ----------
+    renderAll();
+  </script>
+</body>
+</html>
