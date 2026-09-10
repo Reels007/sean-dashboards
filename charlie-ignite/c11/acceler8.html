@@ -146,7 +146,7 @@ footer p{margin:4px 0}
 @media (max-width:720px){.three{grid-template-columns:1fr}}
 .tri{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:16px 18px;border-top:6px solid var(--t);display:flex;flex-direction:column;gap:8px}
 .tri .big{font-family:Archivo,sans-serif;font-weight:900;font-size:22px;line-height:1.05;text-transform:uppercase}
-.tri blockquote{font-size:16px;border:0;padding:0}
+.tri blockquote,.tri .tq{font-size:16px;border:0;padding:0;margin:0}
 .door1{margin:10px 0 0}
 .door1 .doors label{cursor:pointer}
 .door1 .doors label:has(input:checked){background:var(--star);color:#1D2433;border-color:var(--star)}
@@ -216,7 +216,7 @@ footer p{margin:4px 0}
       <img class="logo" src="data:image/png;base64,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" alt="Ignite Bermuda">
       <div class="eyebrow">Ignite Bermuda · Cohort 11 · Acceler8 · Butterfield, 9 September 2026</div>
       <h1>The Acceler8 Toolkit</h1>
-      <p class="lede">Halfway. Today was about you, not your business plan. Two minutes here gives you the one tool you need this week. The rest waits below until you want it.</p>
+      <p class="lede">Halfway. Acceler8 was about you, not your business plan. Two minutes here gives you the one tool you need this week. The rest waits below until you want it.</p>
       <div class="pieces">
         <div class="piece" style="--t:var(--pink)">Self awareness</div>
         <div class="piece" style="--t:var(--blue)">Entrepreneurial leadership</div>
@@ -231,7 +231,7 @@ footer p{margin:4px 0}
 <section class="one">
   <div class="wrap">
     <div class="eyebrow" style="color:var(--navy)">Start here, two minutes</div>
-    <h2>Which one got you today?</h2>
+    <h2>Which one got you on the day?</h2>
     <p class="sub">Everyone in the room has at least one. Tap the habit that showed up while you were pitching, listening, or sitting with the feedback. You get the tool, and one move for this week. Pick that one, and you have had your money's worth of this page.</p>
     <div class="mymove" id="mymove" hidden><b>Your move this week</b><span id="mymovetext"></span><a class="remind" id="remind" target="_blank" rel="noopener" href="#">Set a Thursday reminder to do it</a></div>
     <div class="traps">
@@ -239,16 +239,16 @@ footer p{margin:4px 0}
         <button class="traphead" aria-expanded="false"><span class="name">All or nothing</span><span class="sounds">"I missed one day, so the whole plan has failed."</span><span class="hint">Tap</span></button>
         <div class="reveal">
           <p class="fix"><b>The tool.</b> Think in shades of grey. Eighty per cent is not zero.</p>
-          <p class="move"><b>Your one move this week</b>Pick one number to track this week. Miss a day? Keep the number and keep going.</p>
-          <button class="commit" data-move="Pick one number to track this week. Miss a day? Keep the number and keep going." data-name="All or nothing">This is my move</button>
+          <p class="move"><b>Your one move this week</b>Pick one action to do every day this week. Miss a day? Keep the action and keep going.</p>
+          <button class="commit" data-move="Pick one action to do every day this week. Miss a day? Keep the action and keep going." data-name="All or nothing">This is my move</button>
         </div>
       </div>
       <div class="trap" style="--c:var(--orange)" data-k="perfectionism">
         <button class="traphead" aria-expanded="false"><span class="name">Perfectionism</span><span class="sounds">"I can't launch, the website isn't right yet."</span><span class="hint">Tap</span></button>
         <div class="reveal">
           <p class="fix"><b>The tool.</b> Ask: if it fails, is it detrimental? If not, ship the ugly baby.</p>
-          <p class="move"><b>Your one move this week</b>Put one unfinished thing in front of one real customer before Friday.</p>
-          <button class="commit" data-move="Put one unfinished thing in front of one real customer before Friday." data-name="Perfectionism">This is my move</button>
+          <p class="move"><b>Your one move this week</b>Put one unfinished thing in front of one real customer this week.</p>
+          <button class="commit" data-move="Put one unfinished thing in front of one real customer this week." data-name="Perfectionism">This is my move</button>
         </div>
       </div>
       <div class="trap" style="--c:var(--yellow)" data-k="catastrophising">
@@ -264,7 +264,7 @@ footer p{margin:4px 0}
         <div class="reveal">
           <p class="fix"><b>The tool.</b> Name it as a feeling. "I feel" is not "it is". Feelings pass.</p>
           <p class="move"><b>Your one move this week</b>Next time you catch an "I am", rewrite it as "I feel", then check the facts.</p>
-          <button class="commit" data-move="Next time you catch an "I am", rewrite it as "I feel", then check the facts." data-name="Fact vs feeling">This is my move</button>
+          <button class="commit" data-move="Next time you catch an &quot;I am&quot;, rewrite it as &quot;I feel&quot;, then check the facts." data-name="Fact vs feeling">This is my move</button>
         </div>
       </div>
       <div class="trap" style="--c:var(--green)" data-k="conclusions">
@@ -284,8 +284,8 @@ footer p{margin:4px 0}
       <div class="btext">
         <div class="eyebrow" style="color:var(--star)">Your own words</div>
         <h2>Your note is on the board</h2>
-        <p>Back in the room you each wrote what is <em>really</em> stopping you. We turned all 37 notes into a board where every one comes with a piece of advice, a book and a short talk. Not tonight. Save this for tomorrow with a coffee, then find yours and take the one step it hands you.</p>
-        <a class="bbtn" href="https://reels007.github.io/sean-dashboards/charlie-ignite/c11/board.html" target="_blank" rel="noopener">Open the board (tomorrow-with-coffee job)</a>
+        <p>Back in the room you each wrote what is <em>really</em> stopping you. We turned all 37 notes into a board where every one comes with a piece of advice, a book and a short talk. Save this for a quiet moment with a coffee, then find yours and take the one step it hands you.</p>
+        <a class="bbtn" href="https://reels007.github.io/sean-dashboards/charlie-ignite/c11/board.html" target="_blank" rel="noopener">Open the board (a coffee-in-hand job)</a>
       </div>
     </div>
   </div>
@@ -295,7 +295,7 @@ footer p{margin:4px 0}
   <div class="wrap">
     <div class="eyebrow" style="color:var(--navy)">If you remember three things</div>
     <div class="three">
-      <div class="tri" style="--t:var(--star)"><div class="big">Pick the feeling</div><blockquote>Finalists was how they made the judges feel. Did you make them feel different? So when you're presenting to anybody, imagine that there's a word on their head that you're trying to make them feel.</blockquote></div>
+      <div class="tri" style="--t:var(--star)"><div class="big">Pick the feeling</div><p class="tq">The finalists stood out for how they made the judges feel, not just what they said. Before any pitch or meeting, choose the one feeling you want the other person to leave with, such as hopeful, confident or "they understand my problem". Then shape what you say and how you say it to land that feeling.</p></div>
       <div class="tri" style="--t:var(--orange)"><div class="big">Ship the ugly baby</div><blockquote>The tool against perfectionism is: if it fails, is it detrimental?</blockquote></div>
       <div class="tri" style="--t:var(--green)"><div class="big">Don't get stuck</div><blockquote>So don't get stuck. You don't have time to get stuck.<span class="src">Alumni panel</span></blockquote></div>
     </div>
@@ -384,10 +384,10 @@ footer p{margin:4px 0}
 <details class="fold"><summary><span class="ft">Self awareness</span><span class="fl">Name the feeling precisely and it turns into information.</span></summary><!-- 3 -->
 <section class="block" style="--t:var(--pink)">
   <div class="wrap">
-    <div class="blockhead"><div class="when">10:45</div><div><h2>Self awareness</h2><div class="who">Sonica's session: emotions as information, and four tools for reading your own</div></div></div>
+    <div class="blockhead"><div class="when">10:45</div><div><h2>Self awareness</h2><div class="who">Selica's session: emotions as information, and four tools for reading your own</div></div></div>
     <div class="grid">
       <div class="says">
-        <blockquote>Self-awareness is having a good knowledge and understanding of yourself and being aware of your feelings as they change.<span class="src">Sonica</span></blockquote>
+        <blockquote>Self-awareness is having a good knowledge and understanding of yourself and being aware of your feelings as they change.<span class="src">Selica</span></blockquote>
         <blockquote>As an entrepreneur, you can align your strengths and your weaknesses with your business model, your team, and your role in order to produce results.<span class="src">Why it matters</span></blockquote>
         <blockquote>Our emotions are a snapshot in time.</blockquote>
         <blockquote>The more that you practice being in tune with how you feel and actually finding the proper language for labeling how you feel will also fine tune your filter.</blockquote>
@@ -512,7 +512,7 @@ footer p{margin:4px 0}
     <div class="blockhead"><div class="when">3:35</div><div><h2>Advice from the other side</h2><div class="who">Four alumni on the second half of the programme</div></div></div>
     <div class="panel">
       <div class="pan"><b>Hannah</b><span>On Island</span></div>
-      <div class="pan"><b>Shannon Davis</b><span>The Birth Mirror</span></div>
+      <div class="pan"><b>Shannon Davis</b><span>The Growth Mirror</span></div>
       <div class="pan"><b>Sydney West</b><span>Internship Insights</span></div>
       <div class="pan"><b>Alex</b><span>Blue Backyard</span></div>
     </div>
@@ -548,7 +548,7 @@ footer p{margin:4px 0}
     <div class="fbcard">
       <div class="fbq">
         <div class="eyebrow" style="color:var(--navy)">Before you go</div>
-        <h2>Did this help you today?</h2>
+        <h2>Did this help you?</h2>
         <p class="sub">One tap. It tells us whether this is worth making after every session.</p>
       </div>
       <div class="fbbtns" role="group" aria-label="Was this helpful">
