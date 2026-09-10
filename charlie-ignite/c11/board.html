@@ -1,0 +1,440 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>What's Stopping You?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Kalam:wght@400;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --navy:#1B3F9B; --navy-deep:#122B6B; --star:#F5B400;
+  --paper:#F7F6F1; --paper-2:#EFEDE6; --ink:#1D2433; --ink-2:#4A5163; --line:#D9D6CC;
+  --card:#FFFFFF; --shadow:0 10px 30px rgba(27,63,155,.10);
+  --pink:#F27A8F; --orange:#F5A97A; --yellow:#F2DC52; --blue:#8DB9E6; --green:#A6E2C4;
+  --note-ink:#26231D; --focus:#F5B400;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1626; --paper-2:#16203A; --ink:#EEF1F7; --ink-2:#AEB6C8; --line:#2B3654;
+    --card:#18223A; --shadow:0 10px 30px rgba(0,0,0,.35); --navy:#4E75D8; --navy-deep:#1B3F9B;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1626; --paper-2:#16203A; --ink:#EEF1F7; --ink-2:#AEB6C8; --line:#2B3654;
+  --card:#18223A; --shadow:0 10px 30px rgba(0,0,0,.35); --navy:#4E75D8; --navy-deep:#1B3F9B;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+a{color:var(--navy)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+
+/* header echoes the board */
+header{background:var(--navy-deep);color:#fff;padding:34px 0 30px;position:relative;overflow:hidden}
+header::before{content:"";position:absolute;inset:auto -6% -40% auto;width:420px;height:420px;border:3px solid rgba(255,255,255,.18);transform:rotate(18deg);pointer-events:none}
+header::after{content:"";position:absolute;inset:auto -6% -44% auto;width:420px;height:420px;border:3px solid rgba(255,255,255,.18);transform:rotate(18deg) translate(-14px,-14px);pointer-events:none}
+.eyebrow{font-family:Archivo,sans-serif;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:12px;color:var(--star);display:flex;align-items:center;gap:10px}
+.eyebrow .spark{width:18px;height:18px;flex:none}
+h1{font-family:Archivo,sans-serif;font-weight:900;font-size:clamp(38px,8vw,72px);line-height:.95;letter-spacing:-.01em;margin:10px 0 12px;text-wrap:balance;text-transform:uppercase}
+header p{max-width:60ch;margin:0;color:rgba(255,255,255,.86);font-size:18px}
+
+/* themes */
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:-22px 0 8px;position:relative;z-index:1}
+.theme{background:var(--card);border-radius:8px;padding:14px 14px 12px;box-shadow:var(--shadow);border-top:6px solid var(--t)}
+.theme .n{font-family:Archivo,sans-serif;font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.theme .name{font-weight:600;margin-top:4px}
+.theme .sub{color:var(--ink-2);font-size:14px;line-height:1.3}
+@media (max-width:560px){.themes{grid-template-columns:1fr 1fr 1fr;gap:8px}.theme{padding:10px 10px 8px}.theme .n{font-size:26px}.theme .sub{display:none}}
+
+section{padding:22px 0}
+h2{font-family:Archivo,sans-serif;font-weight:700;font-size:22px;margin:0 0 4px}
+.lede{color:var(--ink-2);margin:0 0 16px;max-width:65ch}
+
+/* the wall */
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px 12px;padding:6px 0 90px}
+.note{position:relative;aspect-ratio:1/1;border:0;padding:14px 12px;text-align:left;color:var(--note-ink);background:var(--c);
+  font-family:Kalam,"Comic Sans MS",cursive;font-size:17px;line-height:1.2;
+  box-shadow:2px 4px 8px rgba(0,0,0,.14);transform:rotate(var(--r));transition:transform .15s,box-shadow .15s;
+  display:flex;align-items:flex-start;white-space:pre-line;overflow:hidden}
+.note:hover{transform:rotate(var(--r)) translateY(-3px);box-shadow:3px 8px 16px rgba(0,0,0,.18)}
+.note::before{content:"";position:absolute;left:50%;top:-6px;width:46px;height:14px;transform:translateX(-50%) rotate(-2deg);background:rgba(255,255,255,.45);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.note.small{font-size:14.5px;line-height:1.15}
+.note[aria-pressed="true"]{transform:rotate(0) scale(1.04);box-shadow:0 0 0 4px var(--navy),4px 10px 20px rgba(0,0,0,.22);z-index:1}
+.note[aria-pressed="true"]::after{content:"✓";position:absolute;right:8px;bottom:6px;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font:700 16px/26px Archivo,sans-serif;text-align:center}
+.who{display:block;margin-top:auto;font-size:13px;opacity:.7;font-family:"Source Sans 3",sans-serif}
+
+.own{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.own input{flex:1 1 220px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+.btn{border:0;border-radius:6px;padding:10px 16px;font-weight:600;background:var(--paper-2);color:var(--ink)}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.star{background:var(--star);color:#1D2433}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* sticky action bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.10)}
+.bar .wrap{display:flex;align-items:center;gap:12px;padding:12px 18px}
+.bar .count{font-weight:600;flex:1;font-variant-numeric:tabular-nums}
+.bar .count small{display:block;color:var(--ink-2);font-weight:400;font-size:13px}
+
+/* result */
+#result{scroll-margin-top:12px}
+.advice{background:var(--card);border-radius:10px;box-shadow:var(--shadow);padding:22px 22px 18px;border-left:8px solid var(--star)}
+.advice .picked{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{font-family:Kalam,cursive;font-size:14px;padding:2px 10px;border-radius:4px;background:var(--c);color:var(--note-ink);box-shadow:1px 2px 3px rgba(0,0,0,.12)}
+.advice .themeline{font-family:Archivo,sans-serif;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--navy);margin-bottom:6px}
+.advice p.text{font-size:19px;line-height:1.55;margin:0;max-width:66ch}
+.recs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:640px){.recs{grid-template-columns:1fr}}
+.rec{background:var(--card);border-radius:10px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:6px}
+.rec .kind{font-family:Archivo,sans-serif;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.rec .kind svg{width:16px;height:16px}
+.rec .title{font-family:Archivo,sans-serif;font-weight:700;font-size:19px;line-height:1.2;text-wrap:balance}
+.rec .by{color:var(--ink-2)}
+.rec .why{margin:2px 0 6px}
+.rec a.btn{align-self:flex-start;text-decoration:none;margin-top:auto}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:6px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast.show{opacity:1}
+
+footer{padding:18px 0 110px;color:var(--ink-2);font-size:14px}
+footer .spark{width:14px;height:14px;vertical-align:-2px}
+@media (prefers-reduced-motion:reduce){.note,.toast{transition:none}}
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F5B400" d="M12 1l2.2 6.6L21 9l-5.4 4.3L17.5 21 12 17.2 6.5 21l1.9-7.7L3 9l6.8-1.4z"/></svg>Ignite Bermuda · Cohort 11 · 9 September 2026</div>
+    <h1>What's stopping you?</h1>
+    <p>Tap the post-it notes that sound like you. You'll get one paragraph of advice, one book, and one talk to watch this week.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="themes" id="themes"></div>
+
+  <section>
+    <h2>The wall</h2>
+    <p class="lede">Every note from this morning's board, as written. Pick one or more. Your own note not here? Add it below.</p>
+    <div class="wall" id="wall"></div>
+    <div class="own">
+      <input id="ownText" type="text" maxlength="80" placeholder="Write your own post-it, e.g. 'fear of the pitch'" aria-label="Write your own post-it">
+      <button class="btn" id="ownAdd">Add my note</button>
+    </div>
+  </section>
+
+  <section id="result" hidden>
+    <h2>Your advice</h2>
+    <div class="advice">
+      <div class="picked" id="picked"></div>
+      <div class="themeline" id="themeline"></div>
+      <p class="text" id="adviceText"></p>
+    </div>
+    <div class="recs">
+      <div class="rec" id="bookCard"></div>
+      <div class="rec" id="videoCard"></div>
+    </div>
+    <div class="actions">
+      <button class="btn star" id="again">Show me another book and talk</button>
+      <button class="btn" id="copy">Copy my advice</button>
+      <button class="btn" id="share">Share this page</button>
+    </div>
+  </section>
+
+  <footer>
+    <svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F5B400" d="M12 1l2.2 6.6L21 9l-5.4 4.3L17.5 21 12 17.2 6.5 21l1.9-7.7L3 9l6.8-1.4z"/></svg>
+    Built from 37 post-it notes written by Cohort 11 at the "What's stopping you?" session. Advice draws on the work of Carol Dweck, Brené Brown, Kristin Neff, Tim Ferriss, Jia Jiang, Greg McKeown, Cal Newport, James Clear and Adam Grant. Nothing here is a substitute for talking to your coach.
+  </footer>
+</main>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="count"><span id="countN">0 notes selected</span><small id="countHint">Tap a post-it to start</small></div>
+    <button class="btn" id="clear">Clear</button>
+    <button class="btn primary" id="go" disabled>Get my advice</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- the notes, as written on the board ---------- */
+const C={pink:"var(--pink)",orange:"var(--orange)",yellow:"var(--yellow)",blue:"var(--blue)",green:"var(--green)"};
+const NOTES=[
+ {id:1, c:"pink",   t:"ME\nDoubt\nFear\nWorry\nJob balance", th:["belief","fear","time"]},
+ {id:2, c:"orange", t:"Expectations", th:["belief"]},
+ {id:3, c:"orange", t:"Doubt\nFear\nPerfection", th:["belief","fear"], hint:"perfection"},
+ {id:4, c:"orange", t:"Fear\nComparison\nDoubt / Self worth", th:["fear","belief"], hint:"comparison"},
+ {id:5, c:"blue",   t:"Fear of numbers", th:["fear"], hint:"numbers"},
+ {id:6, c:"pink",   t:"Nothing! I am doing it!\nI love what I do.\nI believe in what I do!", th:["nothing"], who:"Vanessa"},
+ {id:7, c:"pink",   t:"Listening to others\nDistrust", th:["trust"]},
+ {id:8, c:"orange", t:"What is stopping me?\nDisorganisation\nExhaustion\nFear", th:["time","fear"]},
+ {id:9, c:"blue",   t:"Fear", th:["fear"]},
+ {id:10,c:"yellow", t:"Fear of rejection", th:["fear"], hint:"rejection"},
+ {id:11,c:"blue",   t:"Fear of making the wrong choice", th:["fear"], hint:"choice"},
+ {id:12,c:"yellow", t:"Insecurity", th:["belief"]},
+ {id:13,c:"orange", t:"Optimizing resources & network", th:["help"], hint:"network"},
+ {id:14,c:"blue",   t:"Self belief", th:["belief"]},
+ {id:15,c:"orange", t:"Self-belief", th:["belief"]},
+ {id:16,c:"yellow", t:"Not smart enough", th:["belief"]},
+ {id:17,c:"yellow", t:"Energy\nNothing\nUncertainty", th:["time","fear"]},
+ {id:18,c:"yellow", t:"I don't have it all together", th:["belief","time"]},
+ {id:19,c:"yellow", t:"1. I don't believe I'm capable\n2. I am overwhelmed\n3. I'm frightened of getting it wrong and doing harm", th:["belief","time","fear"], small:true},
+ {id:20,c:"orange", t:"Patience", th:["time"]},
+ {id:21,c:"orange", t:"Energy", th:["time"]},
+ {id:22,c:"orange", t:"Fear\nTime", th:["fear","time"]},
+ {id:23,c:"orange", t:"Time\nExhaustion\nHelp", th:["time","help"]},
+ {id:24,c:"orange", t:"Time", th:["time"]},
+ {id:25,c:"orange", t:"HELP", th:["help"]},
+ {id:26,c:"green",  t:"Doubt", th:["belief"]},
+ {id:27,c:"yellow", t:"Hesitation\nTrust\nTime", th:["fear","trust","time"]},
+ {id:28,c:"orange", t:"Dedicating the time", th:["time"]},
+ {id:29,c:"blue",   t:"Comfort", th:["fear"], hint:"comfort"},
+ {id:30,c:"yellow", t:"Self confidence\nMoney", th:["belief","help"], hint:"money"},
+ {id:31,c:"blue",   t:"Motivation", th:["time"]},
+ {id:32,c:"orange", t:"Fear of assistance", th:["help","fear"], hint:"asking"},
+ {id:33,c:"green",  t:"Time", th:["time"]},
+ {id:34,c:"yellow", t:"Not good enough", th:["belief"]},
+ {id:35,c:"orange", t:"Am I good enough?", th:["belief"]},
+ {id:36,c:"blue",   t:"Exhaustion", th:["time"]},
+ {id:37,c:"blue",   t:"Belief", th:["belief"]},
+];
+
+/* ---------- the coaching content ---------- */
+const THEMES={
+ belief:{name:"Self-belief",sub:"doubt, not good enough, insecurity",color:"var(--blue)",
+  insight:[
+   "Nearly half the board wrote some version of \"am I good enough?\" That feeling is not a verdict on you, it is what Carol Dweck calls a fixed-mindset moment: treating a skill you have not built yet as proof of who you are. The founders who get through this do not wait to feel confident. They act while doubtful and let the evidence catch up.",
+   "Doubt is the most common note on the wall, so you are in good company. Kristin Neff's research is clear that self-criticism does not make people work harder, it makes them avoid the work. Talk to yourself the way you would talk to a friend in your seat, then do the next small thing anyway.",
+   "\"Not good enough\" is a comparison, and you are almost always comparing your inside to someone else's outside. Dan Sullivan calls the fix measuring the gain, not the gap: look back at where you were six months ago instead of forward at where someone else appears to be."
+  ],
+  action:[
+   "This week, write down three things you have already done that a year-ago you would not have believed, and read the list before your next hard conversation.",
+   "This week, replace one \"I can't\" with \"I can't yet\" out loud, then book the thing you said it about.",
+   "This week, ask one person who knows your work what they think you are good at, and write down their exact words."
+  ],
+  books:[
+   {t:"Mindset",a:"Carol Dweck",why:"The research behind \"not yet\". Explains why doubt feels like fact and how to change the story you tell about your own ability."},
+   {t:"The Gifts of Imperfection",a:"Brené Brown",why:"Ten short practices for letting go of who you think you are supposed to be. Reads in a weekend."},
+   {t:"Self-Compassion",a:"Kristin Neff",why:"Why being kind to yourself makes you braver, not softer. Backed by twenty years of studies."},
+   {t:"The Gap and the Gain",a:"Dan Sullivan and Benjamin Hardy",why:"A one-idea book for anyone who keeps measuring themselves against people further along."}
+  ],
+  videos:[
+   {t:"The power of believing that you can improve",a:"Carol Dweck, TED",id:"_X0mgOOSpLU",why:"Ten minutes on the single word \"yet\" and what it does to a brain under pressure."},
+   {t:"The space between self-esteem and self-compassion",a:"Kristin Neff, TEDx",id:"IvtZBUSplr4",why:"Why chasing self-esteem keeps you insecure, and what to do instead."},
+   {t:"Your body language may shape who you are",a:"Amy Cuddy, TED",id:"Ks-_Mh1QhMc",why:"\"Fake it till you become it.\" A practical two minutes before any pitch."},
+   {t:"Teach girls bravery, not perfection",a:"Reshma Saujani, TED",id:"fC9da6eqaqg",why:"On why perfection is a habit you were taught, and how to unlearn it in twelve minutes."}
+  ]},
+ fear:{name:"Fear",sub:"rejection, the wrong choice, getting it wrong",color:"var(--orange)",
+  insight:[
+   "Fear showed up on fourteen notes, and almost every one names a specific thing: rejection, the wrong choice, doing harm, the numbers. That is useful, because named fears can be tested. Tim Ferriss calls it fear-setting: write down the worst case, what you would do to repair it, and what standing still costs you. The last column is usually the scariest.",
+   "Fear is not the thing that stops founders, avoidance is. Jia Jiang spent a hundred days asking strangers for absurd things and found that rejection almost never hurt as much as he had rehearsed it to. Every no you collect makes the next ask cheaper.",
+   "Brené Brown's finding from thousands of interviews is that nobody feels ready before they act. Courage is not the absence of the fear on your note, it is deciding the thing you want matters more than the discomfort of being seen trying."
+  ],
+  action:[
+   "This week, do one fear-setting page: worst case, how you would recover, and the cost of doing nothing for six months. Then make the ask you have been avoiding.",
+   "This week, go and get one deliberate no. Ask a customer, a supplier or a mentor for something slightly bigger than feels comfortable, and notice that you survive it.",
+   "This week, make the wrong-choice fear smaller: pick the reversible version of the decision you are stalling on and take it before Friday."
+  ],
+  books:[
+   {t:"Feel the Fear and Do It Anyway",a:"Susan Jeffers",why:"The plain classic on acting while afraid. Short, direct, and still the best first book on this."},
+   {t:"Rejection Proof",a:"Jia Jiang",why:"A hundred days of deliberate rejection and what it teaches about asking. Funny and very practical."},
+   {t:"Daring Greatly",a:"Brené Brown",why:"Why showing up before you feel ready is the whole job, and how to do it without armour."},
+   {t:"The War of Art",a:"Steven Pressfield",why:"Names the thing that stops you (he calls it Resistance) and gives you a daily way to beat it. Two hours to read."}
+  ],
+  videos:[
+   {t:"Why you should define your fears instead of your goals",a:"Tim Ferriss, TED",id:"5J6jAC6XxAI",why:"The fear-setting exercise, start to finish, in thirteen minutes. Do it with a pen."},
+   {t:"What I learned from 100 days of rejection",a:"Jia Jiang, TED",id:"-vZXgApsPCQ",why:"The most watchable talk on fear of rejection there is."},
+   {t:"The power of vulnerability",a:"Brené Brown, TED",id:"iCvmsMzlF7o",why:"Twenty minutes that reframe being seen trying as the point, not the risk."},
+   {t:"Success, failure and the drive to keep creating",a:"Elizabeth Gilbert, TED",id:"_waBFUg_oT8",why:"On going home to the work after both failure and success. Good for the fear of getting it wrong."}
+  ]},
+ time:{name:"Time and energy",sub:"exhaustion, overwhelm, dedicating the time",color:"var(--yellow)",
+  insight:[
+   "Fifteen notes say time, energy or exhaustion, and they are usually the same problem: too many open loops, no protected block for the thing that matters. Greg McKeown's Essentialism puts it bluntly. If you do not prioritise your life, someone else will. The fix is not more hours, it is fewer things done properly.",
+   "Overwhelm is what a to-do list feels like when nothing on it is finished. Cal Newport's research on deep work shows that ninety focused minutes beats a scattered day. Book the block first, then let everything else fit around it.",
+   "Exhaustion is a signal, not a character flaw. Alex Pang's work on rest shows the most productive people deliberately stop, and that motivation returns when energy does. Sleep, a walk and a hard stop time are business tools, not luxuries."
+  ],
+  action:[
+   "This week, put one ninety-minute block in your calendar for the single most important task, phone in another room, and treat it like a client meeting.",
+   "This week, write everything you are carrying onto one page, cross out anything nobody would notice if it slipped a month, and do the top item first each morning.",
+   "This week, set a hard stop time for work on three of the five days and keep it. Notice what happens to your energy by Thursday."
+  ],
+  books:[
+   {t:"Essentialism",a:"Greg McKeown",why:"The disciplined pursuit of less. The right book if your note said time, patience or dedicating the time."},
+   {t:"The One Thing",a:"Gary Keller and Jay Papasan",why:"One question to ask every morning that cuts the list down to what actually moves the business."},
+   {t:"Atomic Habits",a:"James Clear",why:"How to make the important work automatic so it stops depending on motivation."},
+   {t:"Rest",a:"Alex Soojung-Kim Pang",why:"Why the people who get the most done also stop the most deliberately. The book for exhaustion."}
+  ],
+  videos:[
+   {t:"How to gain control of your free time",a:"Laura Vanderkam, TED",id:"n3kNlFMXslo",why:"Twelve minutes on why \"I don't have time\" really means \"it's not a priority\", said kindly."},
+   {t:"Inside the mind of a master procrastinator",a:"Tim Urban, TED",id:"arj7oStGLkU",why:"Very funny, and quietly serious about the deadlines nobody sets for you."},
+   {t:"How to make stress your friend",a:"Kelly McGonigal, TED",id:"RcGyVTAoXEU",why:"The research showing that how you think about pressure changes what it does to you."}
+  ]},
+ help:{name:"Asking for help",sub:"resources, money, network",color:"var(--green)",
+  insight:[
+   "Several notes said help, resources or money, and one said fear of assistance, which is the honest version. Adam Grant's research on givers and takers found that people who ask for specific help are seen as more competent, not less. The ask that feels like weakness reads as clarity to the person receiving it.",
+   "Money and network problems are rarely solved alone. Bill Gross looked at hundreds of start-ups and found timing and team mattered more than funding. Your cohort and your mentors are the team. Use them before you use your savings."
+  ],
+  action:[
+   "This week, make one specific ask to one specific person: name the thing, the deadline and why them. Vague asks get vague answers.",
+   "This week, list the five people in Bermuda who could open a door for you, and message the first two."
+  ],
+  books:[
+   {t:"Give and Take",a:"Adam Grant",why:"Why generous people finish first, and how to ask for help without feeling like a burden."},
+   {t:"Never Eat Alone",a:"Keith Ferrazzi",why:"The practical playbook for building a network before you need it."},
+   {t:"Profit First",a:"Mike Michalowicz",why:"A simple system for founders who are frightened of the money side. Set up in an afternoon."}
+  ],
+  videos:[
+   {t:"Are you a giver or a taker?",a:"Adam Grant, TED",id:"YyXRYgjQXX0",why:"Thirteen minutes on why asking, and helping, are the same skill."},
+   {t:"The single biggest reason why start-ups succeed",a:"Bill Gross, TED",id:"bNpx7gpSqbY",why:"Six minutes of data on what actually predicts success. Funding is not top."}
+  ]},
+ trust:{name:"Trust",sub:"listening to others, distrust",color:"var(--pink)",
+  insight:[
+   "Trust and listening to others came up on two notes. Adam Grant's Think Again is useful here: treat other people's opinions as data to weigh, not instructions to obey or threats to defend against. You can listen fully and still decide yourself."
+  ],
+  action:[
+   "This week, before your next piece of advice from anyone, write down what you would decide on your own first. Then compare."
+  ],
+  books:[
+   {t:"Think Again",a:"Adam Grant",why:"How to hold opinions loosely, hear people out, and still make your own call."},
+   {t:"The Speed of Trust",a:"Stephen M. R. Covey",why:"Trust as a business skill you can build deliberately, with others and with yourself."}
+  ],
+  videos:[
+   {t:"Are you a giver or a taker?",a:"Adam Grant, TED",id:"YyXRYgjQXX0",why:"On reading people accurately, and what trusting the right ones does for your work."}
+  ]},
+ nothing:{name:"Nothing is stopping me",sub:"I am doing it",color:"var(--pink)",
+  insight:[
+   "One note on the wall said nothing is stopping me, I am doing it. Angela Duckworth's research on grit says that is the profile that finishes: not the most talented, the one who keeps showing up. Your job now is to protect that energy, and to lend some of it to the people around you whose notes said fear."
+  ],
+  action:[
+   "This week, pick one cohort member whose note was about doubt and tell them one specific thing you have seen them do well."
+  ],
+  books:[
+   {t:"Grit",a:"Angela Duckworth",why:"Why passion plus persistence beats talent, and how to keep both alive over years."},
+   {t:"Start with Why",a:"Simon Sinek",why:"For the founder who already believes: how to make everyone else believe too."}
+  ],
+  videos:[
+   {t:"Grit: the power of passion and perseverance",a:"Angela Duckworth, TED",id:"H14bBuluwB8",why:"Six minutes on the trait that predicts who finishes."},
+   {t:"Start with why",a:"Simon Sinek, TEDx",id:"u4ZoJKF_VuA",why:"The talk on turning your belief into something a customer can feel."}
+  ]}
+};
+/* note-specific book overrides */
+const HINT_BOOK={
+ numbers:{t:"Financial Intelligence for Entrepreneurs",a:"Karen Berman and Joe Knight",why:"Written for founders who are scared of the numbers. Explains what the figures mean, not how to be an accountant."},
+ money:{t:"Profit First",a:"Mike Michalowicz",why:"A simple system for founders who are frightened of the money side. Set up in an afternoon."},
+ perfection:{t:"The Gifts of Imperfection",a:"Brené Brown",why:"Ten short practices for letting go of who you think you are supposed to be. Reads in a weekend."},
+ comparison:{t:"The Gap and the Gain",a:"Dan Sullivan and Benjamin Hardy",why:"A one-idea book for anyone who keeps measuring themselves against people further along."},
+ rejection:{t:"Rejection Proof",a:"Jia Jiang",why:"A hundred days of deliberate rejection and what it teaches about asking. Funny and very practical."},
+ asking:{t:"Give and Take",a:"Adam Grant",why:"Why generous people finish first, and how to ask for help without feeling like a burden."},
+ comfort:{t:"The War of Art",a:"Steven Pressfield",why:"Names the thing that keeps you comfortable (he calls it Resistance) and gives you a daily way to beat it."}
+};
+const HINT_VIDEO={
+ numbers:"5J6jAC6XxAI", rejection:"-vZXgApsPCQ", perfection:"fC9da6eqaqg", comparison:"_X0mgOOSpLU", asking:"YyXRYgjQXX0", choice:"5J6jAC6XxAI"
+};
+
+/* ---------- state ---------- */
+const ORDER=["belief","fear","time","help","trust","nothing"];
+let selected=new Set(), ownNotes=[], offset=0;
+const $=s=>document.querySelector(s);
+
+/* ---------- top themes ---------- */
+(function(){
+  const counts={};NOTES.forEach(n=>n.th.forEach(t=>counts[t]=(counts[t]||0)+1));
+  const top=["belief","time","fear"];
+  $("#themes").innerHTML=top.map(k=>`<div class="theme" style="--t:${THEMES[k].color}"><div class="n">${counts[k]}</div><div class="name">${THEMES[k].name}</div><div class="sub">${THEMES[k].sub} · ${counts[k]} of 37 notes</div></div>`).join("");
+})();
+
+/* ---------- wall ---------- */
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function renderWall(){
+  const all=NOTES.concat(ownNotes);
+  $("#wall").innerHTML=all.map((n,i)=>{
+    const r=((i*37)%9-4)*0.6;
+    return `<button class="note${n.small?" small":""}" data-id="${n.id}" aria-pressed="${selected.has(n.id)}" style="--c:${C[n.c]};--r:${r}deg">${esc(n.t)}${n.who?`<span class="who">${esc(n.who)}</span>`:""}</button>`;
+  }).join("");
+}
+$("#wall").addEventListener("click",e=>{
+  const b=e.target.closest(".note");if(!b)return;
+  const id=+b.dataset.id;selected.has(id)?selected.delete(id):selected.add(id);
+  b.setAttribute("aria-pressed",selected.has(id));offset=0;sync();
+});
+function sync(){
+  const n=selected.size;
+  $("#countN").textContent=n===1?"1 note selected":`${n} notes selected`;
+  $("#countHint").textContent=n?"Ready when you are":"Tap a post-it to start";
+  $("#go").disabled=!n;
+  try{localStorage.setItem("wsy-sel",JSON.stringify([...selected]));}catch(e){}
+  if(n) history.replaceState(null,"","#n="+[...selected].join(","));
+}
+
+/* ---------- own note ---------- */
+const KEYS=[[/fear|afraid|scared|reject|wrong|risk|fail|nervous|hesit/i,"fear"],[/doubt|belie|confid|enough|smart|insecur|impost|compar|worth|capable/i,"belief"],[/time|tired|exhaust|energy|overwhelm|busy|motivat|organi|focus|patien|balance/i,"time"],[/help|money|fund|cash|resource|network|support|assist|invest/i,"help"],[/trust|listen|advice|opinion/i,"trust"]];
+$("#ownAdd").addEventListener("click",()=>{
+  const t=$("#ownText").value.trim();if(!t)return;
+  const th=KEYS.filter(([re])=>re.test(t)).map(([,k])=>k);
+  if(!th.length){toast("Couldn't place that one. Tap the nearest note on the wall instead.");return;}
+  const id=100+ownNotes.length;ownNotes.push({id,c:"green",t,th,who:"you"});selected.add(id);$("#ownText").value="";renderWall();sync();
+});
+
+/* ---------- advice engine ---------- */
+function hash(a){let h=7;a.forEach(x=>h=(h*31+x)%100003);return h}
+function build(){
+  const all=NOTES.concat(ownNotes);
+  const picks=all.filter(n=>selected.has(n.id));
+  const counts={};picks.forEach(n=>n.th.forEach(t=>counts[t]=(counts[t]||0)+1));
+  const ranked=ORDER.filter(k=>counts[k]).sort((a,b)=>counts[b]-counts[a]||ORDER.indexOf(a)-ORDER.indexOf(b));
+  const p=ranked[0], s=ranked[1];
+  const h=hash([...selected].sort((a,b)=>a-b))+offset;
+  const P=THEMES[p], S=s?THEMES[s]:null;
+  const hints=picks.map(n=>n.hint).filter(Boolean);
+
+  /* paragraph */
+  const quoted=picks.slice(0,3).map(n=>`"${n.t.split("\n").join(", ")}"`);
+  const opener=picks.length===1?`You picked ${quoted[0]}.`:picks.length<=3?`You picked ${quoted.slice(0,-1).join(", ")} and ${quoted.slice(-1)}.`:`You picked ${picks.length} notes, including ${quoted.slice(0,2).join(" and ")}.`;
+  const insight=P.insight[h%P.insight.length];
+  const bridge=S?` Underneath that sits ${S.name.toLowerCase()}, and the two feed each other: ${S.insight[(h>>2)%S.insight.length].split(". ").slice(-1)[0]}`:"";
+  const action=P.action[(h>>1)%P.action.length];
+  const text=`${opener} ${insight}${bridge} ${action}`;
+
+  /* book: hint override first, else rotate through the primary theme */
+  let book=null;
+  const hb=hints.find(x=>HINT_BOOK[x]);
+  if(hb&&offset%2===0) book=HINT_BOOK[hb]; else book=P.books[(h+ (hb?1:0))%P.books.length];
+  /* video: from the secondary theme if there is one, else primary; hint can pin it */
+  const vt=S||P; let video=vt.videos[h%vt.videos.length];
+  const hv=hints.find(x=>HINT_VIDEO[x]);
+  if(hv&&offset%2===0){const found=Object.values(THEMES).flatMap(t=>t.videos).find(v=>v.id===HINT_VIDEO[hv]);if(found)video=found;}
+
+  return {picks,p,s,text,book,video};
+}
+function render(){
+  const r=build();
+  $("#picked").innerHTML=r.picks.map(n=>`<span class="chip" style="--c:${C[n.c]}">${esc(n.t.split("\n").join(" · "))}</span>`).join("");
+  $("#themeline").textContent=r.s?`${THEMES[r.p].name} · ${THEMES[r.s].name}`:THEMES[r.p].name;
+  $("#adviceText").textContent=r.text;
+  const bookIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h11a3 3 0 0 1 3 3v15H6a2 2 0 0 0-2 2V3zm2 2v13.2A4 4 0 0 1 6 18h10V6a1 1 0 0 0-1-1H6z"/></svg>`;
+  const playIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm6 4v8l6-4z"/></svg>`;
+  $("#bookCard").innerHTML=`<div class="kind">${bookIcon}Read this</div><div class="title">${esc(r.book.t)}</div><div class="by">${esc(r.book.a)}</div><p class="why">${esc(r.book.why)}</p><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(r.book.t+" "+r.book.a+" book")}">Find the book</a>`;
+  $("#videoCard").innerHTML=`<div class="kind">${playIcon}Watch this</div><div class="title">${esc(r.video.t)}</div><div class="by">${esc(r.video.a)}</div><p class="why">${esc(r.video.why)}</p><a class="btn primary" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=${r.video.id}">Watch on YouTube</a>`;
+  $("#result").hidden=false;
+  $("#result").scrollIntoView({behavior:"smooth",block:"start"});
+  window._last=r;
+}
+$("#go").addEventListener("click",()=>{offset=0;render()});
+$("#again").addEventListener("click",()=>{offset++;render();toast("Here's another pair")});
+$("#clear").addEventListener("click",()=>{selected.clear();offset=0;renderWall();sync();$("#result").hidden=true;history.replaceState(null,""," ");});
+$("#copy").addEventListener("click",async()=>{
+  const r=window._last;if(!r)return;
+  const s=`WHAT'S STOPPING YOU? (Ignite Cohort 11)\n\n${r.text}\n\nRead: ${r.book.t} by ${r.book.a}\nWatch: ${r.video.t} (${r.video.a}) https://www.youtube.com/watch?v=${r.video.id}`;
+  try{await navigator.clipboard.writeText(s);toast("Copied")}catch(e){toast("Couldn't copy on this browser. Select the text instead.")}
+});
+$("#share").addEventListener("click",async()=>{
+  const url=location.href;
+  if(navigator.share){try{await navigator.share({title:"What's stopping you?",text:"Pick your post-it notes and get advice, a book and a talk.",url});return}catch(e){}}
+  try{await navigator.clipboard.writeText(url);toast("Link copied")}catch(e){toast(url)}
+});
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+/* ---------- restore ---------- */
+(function(){
+  const m=location.hash.match(/#n=([\d,]+)/);
+  if(m){m[1].split(",").map(Number).forEach(id=>{if(NOTES.some(n=>n.id===id))selected.add(id)})}
+  else{try{const s=JSON.parse(localStorage.getItem("wsy-sel")||"[]");s.forEach(id=>{if(NOTES.some(n=>n.id===id))selected.add(id)})}catch(e){}}
+  renderWall();sync();
+  if(selected.size&&m)render();
+})();
+</script>
